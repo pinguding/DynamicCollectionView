@@ -1,15 +1,17 @@
 # DynamicCollectionView
 
-`UICollectionView` 의 `UICollectionViewCompositionalLayout` 과 `UICollectionViewDiffableDataSource` 를 **SwiftUI 에서도 최대한 그대로 사용할 수 있도록** 만든 프로젝트입니다.
+> **Server-Driven UI 를 위한 Render Engine.**
+> 서버가 내려주는 데이터(Section / Cell / ReusableView 모델)만으로 화면의 레이아웃과 구성이 결정되는, `UICollectionView` 기반 동적 렌더링 엔진입니다.
 
-데이터(Section / Cell / ReusableView 모델)에 따라 동적으로 구성되는 CompositionalLayout 기반 CollectionView 와, 이를 SwiftUI 에서 선언형으로 감싼 래퍼를 **3rd-party 의존성 없이** 제공합니다.
+`UICollectionView` 의 `UICollectionViewCompositionalLayout` 과 `UICollectionViewDiffableDataSource` 를 **SwiftUI 에서도 최대한 그대로 사용할 수 있도록** 만든 프로젝트이며, **3rd-party 의존성이 없습니다.**
 
-- ✅ **UIKit `UIDynamicCollectionView`** + **SwiftUI `DynamicCollectionView`** 양쪽 지원
-- ✅ SwiftUI 진입점은 **값 / 바인딩(`$`) init 모두 제공**
-- ✅ **데이터 = 셀** — 모델 하나가 곧 셀 하나로 1:1 매핑
-- ✅ **레이아웃 DSL** — Grid / List / WaterFall 을 result builder 로 선언
-- ✅ `UICollectionViewDiffableDataSource` 기반 **자동 diff** (추가/삭제/이동 애니메이션)
-- ✅ 전체 public API **DocC 문서화**
+## 왜 이 라이브러리인가
+
+- 🧩 **Server-Driven UI 렌더 엔진** — 화면을 코드가 아니라 **데이터**로 정의합니다. 서버가 섹션·셀·레이아웃 구성을 내려주면, 모델→셀 매핑 규칙에 따라 그대로 렌더링되므로 **앱 배포 없이 화면 구성을 바꿀 수 있습니다.**
+- 🔀 **이종(heterogeneous) 셀 혼합** — "모델 1개 = 셀 1개". 한 컬렉션 안에 서로 다른 타입의 셀과 레이아웃을 자유롭게 섞을 수 있습니다.
+- 🎛 **표현력 있는 레이아웃 DSL** — Grid · List · WaterFall · 캐러셀 · 중첩 그룹을 선언형으로 구성. CompositionalLayout 의 표현력을 그대로 노출합니다.
+- ✨ **자동 diff** — DiffableDataSource 가 `id` 기준으로 추가·삭제·이동을 자동 애니메이션합니다.
+- 🧱 **UIKit · SwiftUI 양쪽 지원** — UIKit `UIDynamicCollectionView` / SwiftUI `DynamicCollectionView`(값·바인딩 init 모두). 의존성 0, 전체 public API **DocC 문서화**.
 
 ---
 
