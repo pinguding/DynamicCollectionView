@@ -1,41 +1,43 @@
 import UIKit
 
-/// 서버 응답 등 외부 데이터에 따라 레이아웃이 동적으로 바뀔 수 있는 공통 컬렉션 뷰.
+/// A common collection view whose layout can change dynamically based on external data such as server responses.
 ///
-/// ``UICellConfigurableModel``, ``UIReusableViewConfigurableModel``, ``UISection``
-/// 이 세 가지 데이터 모델만으로 컬렉션 뷰의 레이아웃을 구성할 수 있도록 설계되었다.
-/// 세 모델 모두 프로토콜로 추상화되어 있어, 섹션 내부의 아이템(``UICellConfigurableModel``)과
-/// 보충 뷰(``UIReusableViewConfigurableModel``)를 자유롭게 조합할 수 있다.
+/// It is designed so that a collection view's layout can be composed using only
+/// the three data models ``UICellConfigurableModel``, ``UIReusableViewConfigurableModel``,
+/// and ``UISection``. All three models are abstracted as protocols, so items
+/// inside a section (``UICellConfigurableModel``) and supplementary views
+/// (``UIReusableViewConfigurableModel``) can be combined freely.
 ///
-/// 내부적으로 `UICollectionViewDiffableDataSource`를 사용하며, 섹션이 apply될 때
-/// 매칭되는 셀/보충 뷰를 자동으로 등록하므로 호출 측에서 별도의 register 작업이 필요 없다.
+/// Internally it uses `UICollectionViewDiffableDataSource`, and it automatically
+/// registers the matching cells/supplementary views when a section is applied,
+/// so the call site needs no separate register work.
 ///
-/// - Important: 이 타입은 `@MainActor`로 격리되어 모든 접근이 메인 스레드에서
-///   이루어진다. 따라서 별도의 락 없이도 스레드 안전성이 보장된다.
+/// - Important: This type is isolated to `@MainActor`, so all access occurs on
+///   the main thread. Thread safety is therefore guaranteed without a separate lock.
 @MainActor
 public class UIDynamicCollectionView: UICollectionView {
 
-    /// 셀/보충 뷰 디큐(dequeue)에 실패했을 때 크래시 대신 빈 UI를 노출하기 위한 식별자 모음.
+    /// A collection of identifiers for showing an empty UI instead of crashing when dequeuing a cell/supplementary view fails.
     private enum Constants {
-        /// 디큐 실패 시 사용할 빈 셀의 재사용 식별자.
+        /// The reuse identifier of the blank cell used when dequeue fails.
         static let blankCellIdentifier: String = String(describing: UICollectionViewCell.self)
-        /// 디큐 실패 시 사용할 빈 보충 뷰의 재사용 식별자.
+        /// The reuse identifier of the blank supplementary view used when dequeue fails.
         static let blankSupplementaryViewIdentifier: String = String(describing: UICollectionReusableView.self)
     }
 
-    /// 현재 컬렉션 뷰에 적용되어 있는 섹션들.
+    /// The sections currently applied to the collection view.
     ///
-    /// ``UIDynamicCollectionView``가 `@MainActor`로 격리되어 모든 접근이 메인 스레드에서
-    /// 이루어지므로 별도의 락 없이도 안전하게 읽고 쓸 수 있다.
+    /// Since ``UIDynamicCollectionView`` is isolated to `@MainActor` and all access
+    /// occurs on the main thread, it can be read and written safely without a separate lock.
     public var currentSections: [any UISection] = []
 
-    /// 컬렉션 뷰에 이미 등록된 컴포넌트의 재사용 식별자 집합.
+    /// The set of reuse identifiers of components already registered with the collection view.
     private var registeredComponent: Set<String> = []
 
-    /// 컬렉션 뷰 내부에서 사용하는 디퍼블 데이터 소스.
+    /// The diffable data source used internally by the collection view.
     private var diffableDataSource: UICollectionViewDiffableDataSource<String, String>?
 
-    /// 표시할 아이템이 없을 때 안내 문구를 보여주는 라벨.
+    /// A label that shows a guidance message when there are no items to display.
     private let emptyItemGuideView: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 21, weight: .medium)
@@ -47,12 +49,12 @@ public class UIDynamicCollectionView: UICollectionView {
         return label
     }()
 
-    /// 커스텀 Compositional Layout 타입을 지정하여 컬렉션 뷰를 생성한다.
+    /// Creates the collection view by specifying a custom Compositional Layout type.
     ///
-    /// 전달한 레이아웃 타입은 각 섹션의 ``UISection/sectionLayout(_:sectionIndex:environment:)``
-    /// 결과를 이용해 섹션별 레이아웃을 구성한다.
+    /// The provided layout type composes each section's layout using the result of
+    /// each section's ``UISection/sectionLayout(_:sectionIndex:environment:)``.
     ///
-    /// - Parameter layout: 사용할 `UICollectionViewCompositionalLayout` 하위 타입.
+    /// - Parameter layout: The `UICollectionViewCompositionalLayout` subtype to use.
     public required init<Layout: UICollectionViewCompositionalLayout>(layout: Layout.Type) {
         super.init(frame: .zero, collectionViewLayout: .init())
 
@@ -69,28 +71,28 @@ public class UIDynamicCollectionView: UICollectionView {
         self.registerBlankComponents()
     }
 
-    /// 기본 `UICollectionViewCompositionalLayout`을 사용해 간편하게 생성하는 편의 이니셜라이저.
+    /// A convenience initializer for easy creation using the default `UICollectionViewCompositionalLayout`.
     ///
-    /// 커스텀 레이아웃이 필요 없을 때 사용한다.
+    /// Use this when no custom layout is needed.
     convenience public init() {
         self.init(layout: UICollectionViewCompositionalLayout.self)
     }
 
-    /// 스토리보드/NIB 기반 초기화는 지원하지 않는다.
+    /// Storyboard/NIB-based initialization is not supported.
     ///
-    /// - Important: 호출 시 `fatalError`로 중단된다.
+    /// - Important: Aborts with `fatalError` when called.
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    /// 디큐 실패에 대비한 빈 셀과 빈 보충 뷰를 미리 등록한다.
+    /// Pre-registers a blank cell and blank supplementary view to guard against dequeue failures.
     private func registerBlankComponents() {
         self.register(UICollectionViewCell.self, forCellWithReuseIdentifier: Constants.blankCellIdentifier)
         self.register(UICollectionReusableView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: Constants.blankSupplementaryViewIdentifier)
         self.register(UICollectionReusableView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: Constants.blankSupplementaryViewIdentifier)
     }
 
-    /// 빈 상태 안내 라벨을 서브뷰로 추가하고 중앙 정렬 제약을 설정한다.
+    /// Adds the empty-state guide label as a subview and sets up center-alignment constraints.
     private func configureEmptyGuideView() {
         self.addSubview(self.emptyItemGuideView)
         NSLayoutConstraint.activate([
@@ -101,7 +103,7 @@ public class UIDynamicCollectionView: UICollectionView {
         ])
     }
 
-    /// 모델로부터 1:1로 매칭되는 셀/보충 뷰를 디큐하도록 디퍼블 데이터 소스를 구성한다.
+    /// Configures the diffable data source to dequeue cells/supplementary views that match models one-to-one.
     private func configureDiffableDataSource() {
         self.diffableDataSource = .init(
             collectionView: self,
@@ -116,15 +118,15 @@ public class UIDynamicCollectionView: UICollectionView {
             }
     }
 
-    /// 해당 인덱스의 ``UICellConfigurableModel``로부터 매칭되는 셀을 디큐하여 반환한다.
+    /// Dequeues and returns the cell matching the ``UICellConfigurableModel`` at the given index.
     ///
-    /// 모델을 찾지 못하거나 구성에 실패하면 크래시 대신 빈 셀을 반환한다.
+    /// If the model cannot be found or configuration fails, it returns a blank cell instead of crashing.
     ///
     /// - Parameters:
-    ///   - collectionView: 셀을 디큐할 컬렉션 뷰.
-    ///   - indexPath: 셀이 위치하는 인덱스 패스.
-    ///   - itemIdentifier: 디퍼블 데이터 소스가 전달한 아이템 식별자.
-    /// - Returns: 구성된 셀 또는 빈 셀.
+    ///   - collectionView: The collection view from which to dequeue the cell.
+    ///   - indexPath: The index path where the cell is located.
+    ///   - itemIdentifier: The item identifier passed by the diffable data source.
+    /// - Returns: The configured cell, or a blank cell.
     private func collectionViewCell(
         _ collectionView: UICollectionView,
         at indexPath: IndexPath,
@@ -149,15 +151,15 @@ public class UIDynamicCollectionView: UICollectionView {
         return cell
     }
 
-    /// 해당 위치의 ``UIReusableViewConfigurableModel``로부터 매칭되는 보충 뷰를 디큐하여 반환한다.
+    /// Dequeues and returns the supplementary view matching the ``UIReusableViewConfigurableModel`` at the given position.
     ///
-    /// 모델을 찾지 못하거나 구성에 실패하면 크래시 대신 빈 보충 뷰를 반환한다.
+    /// If the model cannot be found or configuration fails, it returns a blank supplementary view instead of crashing.
     ///
     /// - Parameters:
-    ///   - collectionView: 보충 뷰를 디큐할 컬렉션 뷰.
-    ///   - elementKind: 보충 뷰의 종류(헤더/푸터 등).
-    ///   - indexPath: 보충 뷰가 위치하는 인덱스 패스.
-    /// - Returns: 구성된 보충 뷰 또는 빈 보충 뷰.
+    ///   - collectionView: The collection view from which to dequeue the supplementary view.
+    ///   - elementKind: The kind of supplementary view (header/footer, etc.).
+    ///   - indexPath: The index path where the supplementary view is located.
+    /// - Returns: The configured supplementary view, or a blank supplementary view.
     private func collectionViewSupplementaryView(
         _ collectionView: UICollectionView,
         kind elementKind: String,
@@ -194,11 +196,11 @@ public class UIDynamicCollectionView: UICollectionView {
 
 extension UIDynamicCollectionView {
 
-    /// 지정한 섹션 식별자들에 해당하는 섹션을 리로드한다.
+    /// Reloads the sections corresponding to the given section identifiers.
     ///
     /// - Parameters:
-    ///   - sectionIDs: 리로드할 섹션들의 식별자 배열.
-    ///   - completion: 리로드 적용이 끝난 뒤 호출되는 클로저.
+    ///   - sectionIDs: The array of identifiers of the sections to reload.
+    ///   - completion: A closure called after the reload has been applied.
     public func reloadSection(_ sectionIDs: [String], completion: (() -> Void)? = nil) {
         guard var snapshot = self.diffableDataSource?.snapshot() else { return }
 
@@ -207,27 +209,28 @@ extension UIDynamicCollectionView {
         self.diffableDataSource?.apply(snapshot, animatingDifferences: false, completion: completion)
     }
 
-    /// 단일 섹션을 컬렉션 뷰에 적용한다.
+    /// Applies a single section to the collection view.
     ///
-    /// 내부적으로 ``apply(sections:animated:completion:)``을 호출한다.
+    /// Internally calls ``apply(sections:animated:completion:)``.
     ///
     /// - Parameters:
-    ///   - section: 적용할 섹션.
-    ///   - animated: 변경을 애니메이션과 함께 적용할지 여부.
-    ///   - completion: 적용이 끝난 뒤 호출되는 클로저.
+    ///   - section: The section to apply.
+    ///   - animated: Whether to apply the change with animation.
+    ///   - completion: A closure called after the change has been applied.
     public func apply(_ section: any UISection, animated: Bool, completion: (() -> Void)? = nil) {
         self.apply(sections: [section], animated: animated, completion: completion)
     }
 
-    /// 복수의 섹션을 컬렉션 뷰에 적용한다.
+    /// Applies multiple sections to the collection view.
     ///
-    /// 각 섹션에 필요한 셀/보충 뷰를 자동으로 등록한 뒤, 새 스냅샷을 만들어
-    /// ``currentSections``를 교체하고 디퍼블 데이터 소스에 적용한다.
+    /// After automatically registering the cells/supplementary views needed for each
+    /// section, it creates a new snapshot, replaces ``currentSections``, and applies
+    /// it to the diffable data source.
     ///
     /// - Parameters:
-    ///   - sections: 적용할 섹션 배열. 기존 섹션을 대체한다.
-    ///   - animated: 변경을 애니메이션과 함께 적용할지 여부.
-    ///   - completion: 적용이 끝난 뒤 호출되는 클로저.
+    ///   - sections: The array of sections to apply. Replaces the existing sections.
+    ///   - animated: Whether to apply the change with animation.
+    ///   - completion: A closure called after the change has been applied.
     public func apply(sections: [any UISection], animated: Bool, completion: (() -> Void)? = nil) {
         sections.forEach { section in
             self.registerComponents(section: section)
@@ -247,15 +250,15 @@ extension UIDynamicCollectionView {
         }
     }
 
-    /// 기존 스냅샷에 새로운 섹션들을 이어 붙인다.
+    /// Appends new sections to the existing snapshot.
     ///
-    /// ``apply(sections:animated:completion:)``과 달리 기존 섹션을 대체하지 않고
-    /// 현재 스냅샷 뒤에 추가한다.
+    /// Unlike ``apply(sections:animated:completion:)``, it does not replace the
+    /// existing sections but appends them after the current snapshot.
     ///
     /// - Parameters:
-    ///   - sections: 추가할 섹션 배열.
-    ///   - animated: 변경을 애니메이션과 함께 적용할지 여부.
-    ///   - completion: 적용이 끝난 뒤 호출되는 클로저.
+    ///   - sections: The array of sections to append.
+    ///   - animated: Whether to apply the change with animation.
+    ///   - completion: A closure called after the change has been applied.
     public func append(sections: [any UISection], animated: Bool, completion: (() -> Void)? = nil) {
         guard let diffableDataSource else { return }
 
@@ -272,20 +275,20 @@ extension UIDynamicCollectionView {
         diffableDataSource.apply(snapshot, animatingDifferences: animated, completion: completion)
     }
 
-    /// 지정한 섹션에 아이템들을 이어 붙인다.
+    /// Appends items to the specified section.
     ///
-    /// 대상 섹션이 ``currentSections``에 존재하지 않으면 디버그 빌드에서 `assert`로
-    /// 중단되며, 릴리스 빌드에서는 아무 동작도 하지 않고 반환한다.
+    /// If the target section does not exist in ``currentSections``, it aborts via
+    /// `assert` in debug builds, and in release builds it returns without doing anything.
     ///
     /// - Parameters:
-    ///   - items: 추가할 셀 모델 배열.
-    ///   - sectionIdentifier: 아이템을 추가할 대상 섹션의 식별자.
-    ///   - animated: 변경을 애니메이션과 함께 적용할지 여부.
-    ///   - completion: 적용이 끝난 뒤 호출되는 클로저.
+    ///   - items: The array of cell models to append.
+    ///   - sectionIdentifier: The identifier of the target section to append the items to.
+    ///   - animated: Whether to apply the change with animation.
+    ///   - completion: A closure called after the change has been applied.
     public func append(items: [any UICellConfigurableModel], at sectionIdentifier: String, animated: Bool, completion: (() -> Void)? = nil) {
         assert(
             self.currentSections.contains(where: { $0.id == sectionIdentifier}),
-            "Item 을 Append 할 Section이 존재하지 않습니다."
+            "The section to append items to does not exist."
         )
         guard let diffableDataSource,
               let section = self.currentSections.first(where: { $0.id == sectionIdentifier }) else {
@@ -301,12 +304,13 @@ extension UIDynamicCollectionView {
         diffableDataSource.apply(snapshot, animatingDifferences: animated, completion: completion)
     }
 
-    /// 섹션의 셀과 보충 뷰 컴포넌트를 컬렉션 뷰에 등록한다.
+    /// Registers the section's cell and supplementary view components with the collection view.
     ///
-    /// 이미 등록된 식별자는 ``registeredComponent`` 집합으로 걸러 한 번만 등록한다.
-    /// 이 자동 등록 덕분에 호출 측에서 register 로직에 신경 쓰지 않아도 된다.
+    /// Already-registered identifiers are filtered out using the ``registeredComponent``
+    /// set so each is registered only once. Thanks to this automatic registration,
+    /// the call site does not have to worry about register logic.
     ///
-    /// - Parameter section: 컴포넌트를 등록할 섹션.
+    /// - Parameter section: The section whose components are to be registered.
     private func registerComponents(section: any UISection) {
         self.registerItems(items: section.items)
 
@@ -325,11 +329,11 @@ extension UIDynamicCollectionView {
         }
     }
 
-    /// 셀 모델들에 매칭되는 셀 타입을 컬렉션 뷰에 등록한다.
+    /// Registers the cell types matching the cell models with the collection view.
     ///
-    /// 이미 등록된 식별자는 한 번만 등록한다.
+    /// Already-registered identifiers are registered only once.
     ///
-    /// - Parameter items: 등록 대상이 되는 셀 모델 배열.
+    /// - Parameter items: The array of cell models to register.
     private func registerItems(items: [any UICellConfigurableModel]) {
         items.forEach { model in
             let cellConfigurator = UICellConfigurator(model)

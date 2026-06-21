@@ -1,82 +1,82 @@
 import SwiftUI
 
-/// 섹션 단위 레이아웃을 정의하는 프로토콜.
+/// A protocol that defines a section-level layout.
 ///
-/// ``GridSectionLayout``, ``ListSectionLayout`` 이 채택하며,
-/// 레이아웃 DSL 계층의 최상위(섹션 레벨)에 해당한다.
+/// Adopted by ``GridSectionLayout`` and ``ListSectionLayout``, it sits at the top (section level)
+/// of the layout DSL hierarchy.
 public protocol SectionLayout {
-    /// 섹션 레이아웃을 `NSCollectionLayoutSection` 으로 변환한다.
+    /// Converts the section layout into an `NSCollectionLayoutSection`.
     ///
     /// - Parameters:
-    ///   - index: 변환 대상 섹션의 인덱스.
-    ///   - environment: 레이아웃 계산에 사용할 환경.
-    /// - Returns: 빌드된 `NSCollectionLayoutSection`.
-    /// - Note: DSL 내부 빌드용 SPI 다. 프레임워크가 `NSCollectionLayout*` 로 변환할 때 호출하며 직접 호출하지 말 것.
+    ///   - index: The index of the section being converted.
+    ///   - environment: The environment used for layout calculation.
+    /// - Returns: The built `NSCollectionLayoutSection`.
+    /// - Note: This is an internal build SPI for the DSL. The framework calls it when converting to `NSCollectionLayout*`; do not call it directly.
     func _buildSectionLayout(index: Int, environment: CollectionLayoutEnvironment) -> NSCollectionLayoutSection
 }
 
-/// 그룹 단위 레이아웃을 정의하는 프로토콜.
+/// A protocol that defines a group-level layout.
 ///
-/// ``ItemLayout`` 을 상속하며 ``HGroupLayout``, ``VGroupLayout``, ``WaterFallGroupLayout`` 이 채택한다.
+/// It inherits from ``ItemLayout`` and is adopted by ``HGroupLayout``, ``VGroupLayout``, and ``WaterFallGroupLayout``.
 public protocol GroupLayout: ItemLayout {
-    /// 그룹 레이아웃을 `NSCollectionLayoutGroup` 으로 변환한다.
+    /// Converts the group layout into an `NSCollectionLayoutGroup`.
     ///
-    /// - Returns: 빌드된 `NSCollectionLayoutGroup`.
-    /// - Note: DSL 내부 빌드용 SPI 다. 프레임워크가 `NSCollectionLayout*` 로 변환할 때 호출하며 직접 호출하지 말 것.
+    /// - Returns: The built `NSCollectionLayoutGroup`.
+    /// - Note: This is an internal build SPI for the DSL. The framework calls it when converting to `NSCollectionLayout*`; do not call it directly.
     func _buildGroupLayout() -> NSCollectionLayoutGroup
 }
 
 public extension GroupLayout {
-    /// ``ItemLayout/_buildItemLayout()`` 요구사항을 그룹 빌드로 충족하는 기본 구현.
+    /// The default implementation that satisfies the ``ItemLayout/_buildItemLayout()`` requirement via the group build.
     ///
-    /// - Returns: 그룹을 `NSCollectionLayoutItem` 으로 업캐스트한 값.
-    /// - Note: DSL 내부 빌드용 SPI 다. 직접 호출하지 말 것.
+    /// - Returns: The group upcast to an `NSCollectionLayoutItem`.
+    /// - Note: This is an internal build SPI for the DSL. Do not call it directly.
     func _buildItemLayout() -> NSCollectionLayoutItem {
         self._buildGroupLayout() as NSCollectionLayoutItem
     }
 }
 
-/// 재사용 뷰(헤더/푸터) 레이아웃을 정의하는 프로토콜.
+/// A protocol that defines a reusable view (header/footer) layout.
 ///
-/// ``ItemLayout`` 을 상속하며 ``ReusableItemLayout`` 이 채택한다.
+/// It inherits from ``ItemLayout`` and is adopted by ``ReusableItemLayout``.
 public protocol ReusableLayout: ItemLayout {
-    /// 재사용 뷰 레이아웃을 `NSCollectionLayoutBoundarySupplementaryItem` 으로 변환한다.
+    /// Converts the reusable view layout into an `NSCollectionLayoutBoundarySupplementaryItem`.
     ///
-    /// - Returns: 빌드된 경계 보조 아이템.
-    /// - Note: DSL 내부 빌드용 SPI 다. 프레임워크가 `NSCollectionLayout*` 로 변환할 때 호출하며 직접 호출하지 말 것.
+    /// - Returns: The built boundary supplementary item.
+    /// - Note: This is an internal build SPI for the DSL. The framework calls it when converting to `NSCollectionLayout*`; do not call it directly.
     func _buildSupplementaryLayout() -> NSCollectionLayoutBoundarySupplementaryItem
 }
 
 public extension ReusableLayout {
 
-    /// ``ItemLayout/_buildItemLayout()`` 요구사항을 보조 아이템 빌드로 충족하는 기본 구현.
+    /// The default implementation that satisfies the ``ItemLayout/_buildItemLayout()`` requirement via the supplementary item build.
     ///
-    /// - Returns: 보조 아이템을 `NSCollectionLayoutItem` 으로 업캐스트한 값.
-    /// - Note: DSL 내부 빌드용 SPI 다. 직접 호출하지 말 것.
+    /// - Returns: The supplementary item upcast to an `NSCollectionLayoutItem`.
+    /// - Note: This is an internal build SPI for the DSL. Do not call it directly.
     func _buildItemLayout() -> NSCollectionLayoutItem {
         self._buildSupplementaryLayout() as NSCollectionLayoutItem
     }
 }
 
-/// 아이템 단위 레이아웃을 정의하는 프로토콜.
+/// A protocol that defines an item-level layout.
 ///
-/// 레이아웃 DSL 계층의 기본 단위로, ``GridItemLayout`` 이 채택하며
-/// ``GroupLayout``, ``ReusableLayout`` 의 상위 프로토콜이다.
+/// As the base unit of the layout DSL hierarchy, it is adopted by ``GridItemLayout`` and
+/// is the parent protocol of ``GroupLayout`` and ``ReusableLayout``.
 public protocol ItemLayout {
-    /// 아이템 레이아웃을 `NSCollectionLayoutItem` 으로 변환한다.
+    /// Converts the item layout into an `NSCollectionLayoutItem`.
     ///
-    /// - Returns: 빌드된 `NSCollectionLayoutItem`.
-    /// - Note: DSL 내부 빌드용 SPI 다. 프레임워크가 `NSCollectionLayout*` 로 변환할 때 호출하며 직접 호출하지 말 것.
+    /// - Returns: The built `NSCollectionLayoutItem`.
+    /// - Note: This is an internal build SPI for the DSL. The framework calls it when converting to `NSCollectionLayout*`; do not call it directly.
     func _buildItemLayout() -> NSCollectionLayoutItem
 }
 
-/// 커스텀 가변 높이 아이템 레이아웃을 정의하는 프로토콜.
+/// A protocol that defines a custom variable-height item layout.
 ///
-/// 워터폴처럼 직접 프레임을 계산하는 레이아웃이 채택한다.
+/// Adopted by layouts that compute frames directly, such as a waterfall.
 public protocol CustomItemLayout {
-    /// 커스텀 아이템 레이아웃을 `NSCollectionLayoutGroupCustomItem` 으로 변환한다.
+    /// Converts the custom item layout into an `NSCollectionLayoutGroupCustomItem`.
     ///
-    /// - Returns: 빌드된 커스텀 그룹 아이템.
-    /// - Note: DSL 내부 빌드용 SPI 다. 프레임워크가 `NSCollectionLayout*` 로 변환할 때 호출하며 직접 호출하지 말 것.
+    /// - Returns: The built custom group item.
+    /// - Note: This is an internal build SPI for the DSL. The framework calls it when converting to `NSCollectionLayout*`; do not call it directly.
     func _buildCustomItemLayout() -> NSCollectionLayoutGroupCustomItem
 }

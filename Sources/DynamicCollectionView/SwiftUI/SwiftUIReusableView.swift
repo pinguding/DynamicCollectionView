@@ -1,17 +1,18 @@
 import SwiftUI
 
-/// SwiftUI ``ReusableView`` 를 `UICollectionReusableView` 위에 호스팅하는 브리지 뷰.
+/// A bridge view that hosts a SwiftUI ``ReusableView`` on top of a `UICollectionReusableView`.
 ///
-/// 제네릭 파라미터 `View` 로 주어진 SwiftUI 서플먼터리 뷰를 `UIHostingController`
-/// 로 감싸 헤더/푸터 자리에 배치합니다. 호스팅 컨트롤러를 부모 뷰 컨트롤러에 자식으로
-/// 연결(attach)해 라이프사이클을 관리하고, ``preferredLayoutAttributesFitting(_:)``
-/// 에서 계산한 크기를 모델 식별자별로 캐시하여 반복 레이아웃 비용을 줄입니다.
+/// Wraps the SwiftUI supplementary view given by the generic parameter `View` in a
+/// `UIHostingController` and places it in the header/footer slot. It attaches the
+/// hosting controller as a child of the parent view controller to manage its lifecycle,
+/// and caches the size computed in ``preferredLayoutAttributesFitting(_:)`` per model
+/// identifier to reduce repeated layout cost.
 public final class SwiftUIReusableView<View: ReusableView>: UICollectionReusableView, UIReusableView {
 
-    /// 이 뷰가 호스팅하는 SwiftUI 뷰의 데이터 모델 타입.
+    /// The data model type of the SwiftUI view this view hosts.
     public typealias Model = View.Model
 
-    /// 이 서플먼터리 뷰의 엘리먼트 종류 문자열(헤더/푸터).
+    /// The element kind string of this supplementary view (header/footer).
     public static var elementKind: String {
         View.elementKind.rawValue
     }
@@ -22,7 +23,7 @@ public final class SwiftUIReusableView<View: ReusableView>: UICollectionReusable
 
     private var cachedSize: [String: CGSize] = [:]
 
-    /// 뷰가 재사용되기 전에 호스팅 컨트롤러를 부모에서 분리하고 참조를 정리합니다.
+    /// Detaches the hosting controller from its parent and cleans up references before the view is reused.
     override public func prepareForReuse() {
         super.prepareForReuse()
 
@@ -31,13 +32,14 @@ public final class SwiftUIReusableView<View: ReusableView>: UICollectionReusable
         self.model = nil
     }
 
-    /// 서플먼터리 뷰에 맞는 레이아웃 속성을 계산하고, 모델별 크기를 캐시합니다.
+    /// Computes the layout attributes that fit the supplementary view and caches the size per model.
     ///
-    /// 동일 모델에 대해 이미 계산된 크기가 캐시에 있으면 그 값을 재사용하고,
-    /// 없으면 상위 구현으로 크기를 계산해 모델 식별자(`model.id`)를 키로 캐시합니다.
+    /// If a previously computed size for the same model is already in the cache, it
+    /// reuses that value; otherwise it computes the size via the superclass implementation
+    /// and caches it keyed by the model identifier (`model.id`).
     ///
-    /// - Parameter layoutAttributes: 컬렉션 뷰가 제안한 레이아웃 속성.
-    /// - Returns: 콘텐츠 크기가 반영된 레이아웃 속성.
+    /// - Parameter layoutAttributes: The layout attributes proposed by the collection view.
+    /// - Returns: The layout attributes with the content size applied.
     override public func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
 
         guard let model else {
@@ -56,15 +58,15 @@ public final class SwiftUIReusableView<View: ReusableView>: UICollectionReusable
         }
     }
 
-    /// 주어진 모델로 SwiftUI 서플먼터리 뷰를 생성해 호스팅합니다.
+    /// Creates a SwiftUI supplementary view from the given model and hosts it.
     ///
-    /// 모델과 인덱스 경로로 ``ReusableView`` 를 만들어 `UIHostingController` 로 감싼 뒤
-    /// 뷰의 네 모서리에 제약을 걸어 가득 채우고, 호스팅 컨트롤러를 부모 뷰 컨트롤러의
-    /// 자식으로 연결합니다.
+    /// Builds a ``ReusableView`` from the model and index path, wraps it in a
+    /// `UIHostingController`, pins it to the four edges of the view to fill it, and
+    /// attaches the hosting controller as a child of the parent view controller.
     ///
     /// - Parameters:
-    ///   - model: 뷰가 표시할 데이터 모델.
-    ///   - indexPath: 이 뷰가 위치한 인덱스 경로.
+    ///   - model: The data model the view displays.
+    ///   - indexPath: The index path where this view is located.
     public func configure(model: Model, at indexPath: IndexPath) {
         self.model = model
         let cellView = View.init(model: model, indexPath: indexPath)
@@ -87,29 +89,29 @@ public final class SwiftUIReusableView<View: ReusableView>: UICollectionReusable
         ])
     }
 
-    /// 호스팅 컨트롤러를 부모 뷰 컨트롤러의 자식으로 연결합니다.
+    /// Attaches the hosting controller as a child of the parent view controller.
     ///
     /// - Parameters:
-    ///   - parentViewController: 자식으로 추가될 부모 뷰 컨트롤러. `nil` 이면 아무 작업도 하지 않습니다.
-    ///   - childViewController: 부모에 연결할 호스팅 컨트롤러.
+    ///   - parentViewController: The parent view controller to add the child to. Does nothing if `nil`.
+    ///   - childViewController: The hosting controller to attach to the parent.
     private func attachParent(_ parentViewController: UIViewController?, childViewController: UIViewController) {
         guard let parentViewController else { return }
         parentViewController.addChild(childViewController)
         childViewController.didMove(toParent: parentViewController)
     }
 
-    /// 호스팅 컨트롤러를 부모에서 분리하고 뷰와 제약을 정리합니다.
+    /// Detaches the hosting controller from its parent and cleans up its view and constraints.
     ///
-    /// - Parameter childViewController: 분리할 호스팅 컨트롤러.
+    /// - Parameter childViewController: The hosting controller to detach.
     private func detachParent(_ childViewController: UIViewController?) {
         childViewController?.removeFromParent()
         childViewController?.view.removeConstraints(childViewController?.view.constraints ?? [])
         childViewController?.view.removeFromSuperview()
     }
 
-    /// 책임자 체인을 따라 올라가며 이 뷰를 포함하는 가장 가까운 뷰 컨트롤러를 찾습니다.
+    /// Walks up the responder chain to find the nearest view controller that contains this view.
     ///
-    /// - Returns: 찾은 뷰 컨트롤러, 없으면 `nil`.
+    /// - Returns: The view controller found, or `nil` if none.
     private func parentViewController() -> UIViewController? {
         var responder: UIResponder? = self
         while let currentResponder = responder {

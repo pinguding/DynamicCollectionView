@@ -1,30 +1,31 @@
 import Foundation
 
-/// SwiftUI 기반 셀(``CellView``)을 구성하기 위한 데이터 모델 프로토콜.
+/// A data model protocol for configuring SwiftUI-based cells (``CellView``).
 ///
-/// `UICellConfigurableModel` 을 상속하여, 모델이 어떤 SwiftUI 셀 뷰와 그 셀을
-/// 호스팅하는 `UICollectionViewCell` 타입에 매핑되는지를 연관타입으로 선언합니다.
+/// By inheriting from `UICellConfigurableModel`, it declares via associated types
+/// which SwiftUI cell view the model maps to and which `UICollectionViewCell` type
+/// hosts that cell.
 ///
-/// - Note: 이 프로토콜은 `ObservableObject` 채택을 요구하지 않습니다. 셀 내부에서
-///   값 변화를 관찰해야 할 때에만 모델 타입이 직접 `ObservableObject` 를 채택하면
-///   됩니다.
+/// - Note: This protocol does not require conformance to `ObservableObject`. Only when
+///   you need to observe value changes inside the cell should the model type adopt
+///   `ObservableObject` directly.
 public protocol CellViewConfigurableModel: UICellConfigurableModel {
 
-    /// 이 모델로 구성되는 SwiftUI 셀 뷰의 타입.
+    /// The type of the SwiftUI cell view configured by this model.
     associatedtype CellViewType: CellView
 
-    /// 모델을 호스팅하는 `UICollectionViewCell` 타입.
+    /// The `UICollectionViewCell` type that hosts the model.
     ///
-    /// 기본값은 ``CellViewType`` 을 `UIHostingController` 로 감싸는
-    /// ``SwiftUICell`` 입니다.
+    /// The default is ``SwiftUICell``, which wraps ``CellViewType`` in a
+    /// `UIHostingController`.
     associatedtype CellType = SwiftUICell<CellViewType>
 }
 
-/// 셀이 차지하는 크기 비율을 직접 지정할 수 있는 ``CellViewConfigurableModel``.
+/// A ``CellViewConfigurableModel`` that lets you specify the size ratio the cell occupies directly.
 ///
-/// 표준 레이아웃 대신 너비/높이 비율을 모델에서 제어하고 싶을 때 채택합니다.
+/// Adopt this when you want to control the width/height ratio from the model instead of the standard layout.
 public protocol CustomLayoutCellViewConfigurableModel: CellViewConfigurableModel {
 
-    /// 셀이 레이아웃에서 차지할 크기 비율.
+    /// The size ratio the cell occupies in the layout.
     var sizeRatio: CGFloat { get }
 }

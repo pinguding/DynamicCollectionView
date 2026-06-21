@@ -1,25 +1,25 @@
 import UIKit
 
-/// ``UIDynamicCollectionView``에서 사용할 수 있도록 `UICollectionReusableView`가 채택하는 프로토콜.
+/// A protocol that `UICollectionReusableView` conforms to so it can be used with ``UIDynamicCollectionView``.
 ///
-/// 헤더나 푸터 같은 보충 뷰(supplementary view)를 추상화하며, 자신과 1:1로
-/// 매칭되는 ``Model``을 통해 구성된다. ``SelfIdentifiable``을 함께 채택하므로
-/// 타입 이름이 재사용 식별자로 사용된다.
+/// It abstracts supplementary views such as headers and footers, and is
+/// configured through a ``Model`` that matches it one-to-one. It also conforms
+/// to ``SelfIdentifiable``, so the type name is used as the reuse identifier.
 public protocol UIReusableView: UICollectionReusableView, SelfIdentifiable {
 
-    /// 이 재사용 뷰를 구성하는 데 사용되는 모델 타입.
+    /// The model type used to configure this reusable view.
     associatedtype Model: UIReusableViewConfigurableModel
 
-    /// 이 뷰가 표현하는 보충 요소의 종류(element kind).
+    /// The kind of supplementary element this view represents (element kind).
     ///
-    /// 예: `UICollectionView.elementKindSectionHeader`,
+    /// For example: `UICollectionView.elementKindSectionHeader`,
     /// `UICollectionView.elementKindSectionFooter`.
     static var elementKind: String { get }
 
-    /// 주어진 모델로 뷰의 내용을 구성한다.
+    /// Configures the view's content with the given model.
     ///
     /// - Parameters:
-    ///   - model: 뷰에 표시할 데이터를 담은 모델.
-    ///   - indexPath: 뷰가 위치하는 인덱스 패스.
+    ///   - model: The model holding the data to display in the view.
+    ///   - indexPath: The index path where the view is located.
     func configure(model: Model, at indexPath: IndexPath)
 }

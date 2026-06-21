@@ -1,131 +1,133 @@
 # DynamicCollectionView
 
-> **Server-Driven UI 를 위한 Render Engine.**
-> 서버가 내려주는 데이터(Section / Cell / ReusableView 모델)만으로 화면의 레이아웃과 구성이 결정되는, `UICollectionView` 기반 동적 렌더링 엔진입니다.
+English · **[한국어](README_Kor.md)**
 
-`UICollectionView` 의 `UICollectionViewCompositionalLayout` 과 `UICollectionViewDiffableDataSource` 를 **SwiftUI 에서도 최대한 그대로 사용할 수 있도록** 만든 프로젝트이며, **3rd-party 의존성이 없습니다.**
+> **A render engine for Server-Driven UI.**
+> A `UICollectionView`-based dynamic rendering engine where the screen's layout and composition are determined purely by data (Section / Cell / ReusableView models) delivered from the server.
 
-## 왜 이 라이브러리인가
+Brings `UICollectionView`'s `UICollectionViewCompositionalLayout` and `UICollectionViewDiffableDataSource` to **SwiftUI as faithfully as possible**, with **no 3rd-party dependencies**.
 
-- 🧩 **Server-Driven UI 렌더 엔진** — 화면을 코드가 아니라 **데이터**로 정의합니다. 서버가 섹션·셀·레이아웃 구성을 내려주면, 모델→셀 매핑 규칙에 따라 그대로 렌더링되므로 **앱 배포 없이 화면 구성을 바꿀 수 있습니다.**
-- 🔀 **이종(heterogeneous) 셀 혼합** — "모델 1개 = 셀 1개". 한 컬렉션 안에 서로 다른 타입의 셀과 레이아웃을 자유롭게 섞을 수 있습니다.
-- 🎛 **표현력 있는 레이아웃 DSL** — Grid · List · WaterFall · 캐러셀 · 중첩 그룹을 선언형으로 구성. CompositionalLayout 의 표현력을 그대로 노출합니다.
-- ✨ **자동 diff** — DiffableDataSource 가 `id` 기준으로 추가·삭제·이동을 자동 애니메이션합니다.
-- 🧱 **UIKit · SwiftUI 양쪽 지원** — UIKit `UIDynamicCollectionView` / SwiftUI `DynamicCollectionView`(값·바인딩 init 모두). 의존성 0, 전체 public API **DocC 문서화**.
+## Why this library
+
+- 🧩 **Server-Driven UI render engine** — The screen is defined by **data**, not code. When the server delivers the section / cell / layout composition, it is rendered according to the model→cell mapping rules, so **you can change the screen composition without shipping an app update.**
+- 🔀 **Heterogeneous cells** — "one model = one cell". Freely mix cells and layouts of different types within a single collection.
+- 🎛 **Expressive layout DSL** — Compose Grid · List · WaterFall · carousel · nested groups declaratively, exposing the full power of CompositionalLayout.
+- ✨ **Automatic diffing** — DiffableDataSource animates insertions / deletions / moves automatically, keyed by `id`.
+- 🧱 **Both UIKit & SwiftUI** — UIKit `UIDynamicCollectionView` / SwiftUI `DynamicCollectionView` (both value and binding init). Zero dependencies, entire public API documented with **DocC**.
 
 ---
 
-## 목차
+## Table of Contents
 
-- [요구 사항](#요구-사항)
-- [설치](#설치-swift-package-manager)
-- [구조](#구조)
-  - [디렉터리](#디렉터리)
-  - [레이어 설계](#레이어-설계)
-  - [데이터 흐름](#데이터-흐름)
-- [핵심 개념](#핵심-개념)
-- [SwiftUI 에서 사용](#swiftui-에서-사용)
-  - [셀 정의 (모델 + 뷰)](#셀-정의-모델--뷰)
-  - [섹션 정의 & 화면 표시](#섹션-정의--화면-표시)
-  - [Grid 레이아웃](#grid-레이아웃)
-  - [중첩 그룹 (그룹 안의 그룹)](#중첩-그룹-그룹-안의-그룹)
-  - [List 레이아웃](#list-레이아웃)
-  - [WaterFall 레이아웃](#waterfall-레이아웃)
-  - [Carousel (가로 페이징)](#carousel-가로-페이징)
+- [Requirements](#requirements)
+- [Installation](#installation-swift-package-manager)
+- [Architecture](#architecture)
+  - [Directory layout](#directory-layout)
+  - [Layer design](#layer-design)
+  - [Data flow](#data-flow)
+- [Core concepts](#core-concepts)
+- [Using in SwiftUI](#using-in-swiftui)
+  - [Defining a cell (model + view)](#defining-a-cell-model--view)
+  - [Defining a section & displaying it](#defining-a-section--displaying-it)
+  - [Grid layout](#grid-layout)
+  - [Nested groups (group within a group)](#nested-groups-group-within-a-group)
+  - [List layout](#list-layout)
+  - [WaterFall layout](#waterfall-layout)
+  - [Carousel (horizontal paging)](#carousel-horizontal-paging)
   - [Header / Footer](#header--footer)
-  - [다중 섹션](#다중-섹션)
-  - [이벤트 핸들러](#이벤트-핸들러)
-  - [페이지네이션 (무한 스크롤)](#페이지네이션-무한-스크롤)
-  - [데이터 갱신 (선언형)](#데이터-갱신-선언형)
-- [UIKit 에서 사용](#uikit-에서-사용)
-  - [셀 / 모델 / 섹션 정의](#셀--모델--섹션-정의)
-  - [UIDynamicCollectionView 사용](#uidynamiccollectionview-사용)
-  - [증분 갱신 API](#증분-갱신-api)
-- [레이아웃 DSL 레퍼런스](#레이아웃-dsl-레퍼런스)
-- [라이선스](#라이선스)
+  - [Multiple sections](#multiple-sections)
+  - [Event handlers](#event-handlers)
+  - [Pagination (infinite scroll)](#pagination-infinite-scroll)
+  - [Updating data (declarative)](#updating-data-declarative)
+- [Using in UIKit](#using-in-uikit)
+  - [Defining cell / model / section](#defining-cell--model--section)
+  - [Using UIDynamicCollectionView](#using-uidynamiccollectionview)
+  - [Incremental update API](#incremental-update-api)
+- [Layout DSL reference](#layout-dsl-reference)
+- [License](#license)
 
 ---
 
-## 요구 사항
+## Requirements
 
 - iOS 14.0+
 - Swift 5.9+
 
-## 설치 (Swift Package Manager)
+## Installation (Swift Package Manager)
 
-`Package.swift` 의 의존성에 추가:
+Add it to your `Package.swift` dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/pinguding/DynamicCollectionView.git", from: "1.1.0")
+    .package(url: "https://github.com/pinguding/DynamicCollectionView.git", from: "1.1.1")
 ]
 ```
 
-또는 Xcode 의 **File ▸ Add Package Dependencies…** 에 저장소 URL 을 입력합니다.
+Or use Xcode's **File ▸ Add Package Dependencies…** and enter the repository URL.
 
 ---
 
-## 구조
+## Architecture
 
-### 디렉터리
+### Directory layout
 
 ```
 Sources/DynamicCollectionView/
 ├── Internal/
-│   └── Array+Safe.swift            # 범위 밖 인덱스 → nil (크래시 방지) 내부 헬퍼
+│   └── Array+Safe.swift            # internal helper: out-of-range index → nil (crash-safe)
 │
-├── UIKit/                          # CompositionalLayout 구동 엔진 (UIKit 레이어)
-│   ├── UIDynamicCollectionView.swift   # DiffableDataSource 기반 핵심 컬렉션 뷰
-│   ├── UISection.swift             # 섹션 추상화 프로토콜 + 내부 Configurator
-│   ├── UICell.swift                # 셀이 채택하는 프로토콜
-│   ├── UICellConfigurableModel.swift      # 셀 모델 프로토콜 (모델→셀 dequeue/configure)
-│   ├── UICellConfigurator.swift           # 추상 셀 모델의 내부 구체화 래퍼
-│   ├── UIReusableView.swift               # 서플먼터리(헤더/푸터)가 채택하는 프로토콜
-│   ├── UIReusableViewConfigurableModel.swift  # 서플먼터리 모델 프로토콜
-│   ├── UIReusableViewConfigurator.swift       # 서플먼터리 모델의 내부 구체화 래퍼
-│   └── SelfIdentifiable.swift              # 타입 기반 reuse identifier
+├── UIKit/                          # CompositionalLayout engine (UIKit layer)
+│   ├── UIDynamicCollectionView.swift   # core collection view (DiffableDataSource-based)
+│   ├── UISection.swift             # section abstraction protocol + internal Configurator
+│   ├── UICell.swift                # protocol adopted by cells
+│   ├── UICellConfigurableModel.swift      # cell model protocol (model→cell dequeue/configure)
+│   ├── UICellConfigurator.swift           # internal concretizing wrapper for abstract cell models
+│   ├── UIReusableView.swift               # protocol adopted by supplementary (header/footer) views
+│   ├── UIReusableViewConfigurableModel.swift  # supplementary model protocol
+│   ├── UIReusableViewConfigurator.swift       # internal concretizing wrapper for supplementary models
+│   └── SelfIdentifiable.swift              # type-based reuse identifier
 │
-└── SwiftUI/                        # UIViewRepresentable 래퍼 + 레이아웃 DSL
-    ├── DynamicCollectionView.swift        # 선언형 SwiftUI 진입점 (UIViewRepresentable)
-    ├── CellView.swift                     # SwiftUI 셀 뷰 프로토콜
-    ├── CellViewConfigurableModel.swift    # SwiftUI 셀 모델 프로토콜
-    ├── SwiftUICell.swift                  # CellView → UICollectionViewCell 브리지
-    ├── ReusableView.swift                 # SwiftUI 서플먼터리 뷰 프로토콜
+└── SwiftUI/                        # UIViewRepresentable wrapper + layout DSL
+    ├── DynamicCollectionView.swift        # declarative SwiftUI entry point (UIViewRepresentable)
+    ├── CellView.swift                     # SwiftUI cell view protocol
+    ├── CellViewConfigurableModel.swift    # SwiftUI cell model protocol
+    ├── SwiftUICell.swift                  # CellView → UICollectionViewCell bridge
+    ├── ReusableView.swift                 # SwiftUI supplementary view protocol
     ├── ReusableViewConfigurableModel.swift
-    ├── SwiftUIReusableView.swift          # ReusableView → UICollectionReusableView 브리지
+    ├── SwiftUIReusableView.swift          # ReusableView → UICollectionReusableView bridge
     └── Section/
-        ├── SectionContext.swift           # SwiftUI 섹션 프로토콜 + SwiftUISection 브리지
+        ├── SectionContext.swift           # SwiftUI section protocol + SwiftUISection bridge
         ├── LayoutProtocols.swift          # SectionLayout / GroupLayout / ItemLayout / ReusableLayout
         ├── LayoutBuilder.swift            # @resultBuilder (ItemLayoutBuilder / ReusableViewLayoutBuilder)
-        ├── LayoutSize.swift               # fractional / estimated / absolute 치수
+        ├── LayoutSize.swift               # fractional / estimated / absolute dimensions
         ├── ItemLayout/
-        │   ├── GridItemLayout.swift       # 단일 아이템
-        │   └── ReusableItemLayout.swift   # 헤더/푸터 경계 아이템
+        │   ├── GridItemLayout.swift       # single item
+        │   └── ReusableItemLayout.swift   # header/footer boundary item
         ├── GroupLayout/
-        │   ├── HGroupLayout.swift         # 가로 그룹
-        │   ├── VGroupLayout.swift         # 세로 그룹
-        │   └── WaterFallGroupLayout.swift # Pinterest 식 가변 높이
+        │   ├── HGroupLayout.swift         # horizontal group
+        │   ├── VGroupLayout.swift         # vertical group
+        │   └── WaterFallGroupLayout.swift # Pinterest-style variable height
         └── SectionLayout/
-            ├── GridSectionLayout.swift    # 일반 그리드 (헤더/푸터/orthogonal 지원)
-            └── ListSectionLayout.swift     # UITableView 형태
+            ├── GridSectionLayout.swift    # general grid (header/footer/orthogonal)
+            └── ListSectionLayout.swift     # UITableView-style
 ```
 
-### 레이어 설계
+### Layer design
 
-라이브러리는 **2개 레이어**로 나뉩니다.
+The library is split into **two layers**.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  SwiftUI 레이어                                                │
+│  SwiftUI layer                                                │
 │  DynamicCollectionView (UIViewRepresentable)                  │
-│   ├─ SectionContext      ← 사용자가 정의하는 섹션              │
-│   ├─ CellView / CellViewConfigurableModel        (셀)         │
-│   ├─ ReusableView / ReusableViewConfigurableModel (헤더/푸터)  │
-│   └─ 레이아웃 DSL (Grid/List/HGroup/VGroup/WaterFall…)         │
+│   ├─ SectionContext      ← user-defined section               │
+│   ├─ CellView / CellViewConfigurableModel        (cell)       │
+│   ├─ ReusableView / ReusableViewConfigurableModel (hdr/footer)│
+│   └─ Layout DSL (Grid/List/HGroup/VGroup/WaterFall…)          │
 └───────────────────────────┬─────────────────────────────────┘
-                            │  SwiftUISection / SwiftUICell 로 브리지
+                            │  bridged via SwiftUISection / SwiftUICell
 ┌───────────────────────────▼─────────────────────────────────┐
-│  UIKit 레이어 (엔진)                                          │
+│  UIKit layer (engine)                                        │
 │  UIDynamicCollectionView                                     │
 │   ├─ UISection                                               │
 │   ├─ UICell / UICellConfigurableModel                        │
@@ -134,62 +136,62 @@ Sources/DynamicCollectionView/
 └─────────────────────────────────────────────────────────────┘
 ```
 
-- **UIKit 레이어**가 실제 엔진입니다. `UIDynamicCollectionView` 는 `UICollectionViewDiffableDataSource` 와 `UICollectionViewCompositionalLayout` 을 들고, `UISection` / `UICellConfigurableModel` / `UIReusableViewConfigurableModel` 세 가지 추상 모델로 화면을 구성합니다. UIKit 만으로도 단독 사용할 수 있습니다.
-- **SwiftUI 레이어**는 그 위를 감싼 래퍼입니다. `DynamicCollectionView` 는 `UIViewRepresentable` 로 `UIDynamicCollectionView` 를 호스팅하고, 사용자가 정의한 `SectionContext` 를 내부적으로 `SwiftUISection` 으로 변환해 엔진에 전달합니다. SwiftUI 셀/서플먼터리 뷰는 `SwiftUICell` / `SwiftUIReusableView` 가 `UIHostingController` 로 감싸 올립니다.
+- The **UIKit layer** is the actual engine. `UIDynamicCollectionView` holds a `UICollectionViewDiffableDataSource` and a `UICollectionViewCompositionalLayout`, and builds the screen from three abstract models — `UISection` / `UICellConfigurableModel` / `UIReusableViewConfigurableModel`. It can be used standalone with UIKit only.
+- The **SwiftUI layer** wraps it. `DynamicCollectionView` hosts `UIDynamicCollectionView` via `UIViewRepresentable`, converting your `SectionContext` into `SwiftUISection` internally before handing it to the engine. SwiftUI cells / supplementary views are hosted by `SwiftUICell` / `SwiftUIReusableView` using `UIHostingController`.
 
-### 데이터 흐름
+### Data flow
 
 ```
-[사용자 데이터]
+[user data]
    │  ColorItem(:CellViewConfigurableModel), GridSection(:SectionContext) …
    ▼
-DynamicCollectionView(sections)         // SwiftUI 진입점
+DynamicCollectionView(sections)         // SwiftUI entry point
    │  sections.map { SwiftUISection($0) }
    ▼
-UIDynamicCollectionView.apply(sections:) // DiffableDataSource 스냅샷 적용
-   │  section.id / item.id 로 diff → 추가·삭제·이동 애니메이션
+UIDynamicCollectionView.apply(sections:) // applies a DiffableDataSource snapshot
+   │  diff by section.id / item.id → insert/delete/move animations
    ▼
-cellProvider → UICellConfigurator       // 모델 타입으로 셀 타입/식별자 해석 + 자동 register
+cellProvider → UICellConfigurator       // resolves cell type/identifier from model + auto-register
    │
    ▼
-SwiftUICell<CellView>                    // UIHostingController 로 CellView 호스팅 → 화면
+SwiftUICell<CellView>                    // hosts CellView via UIHostingController → screen
 ```
 
-핵심은 **모델이 곧 셀**이라는 점입니다. `CellViewConfigurableModel` 의 연관타입(`CellViewType`)이 어떤 SwiftUI 뷰로 그려질지를 결정하므로, 같은 섹션 안에 서로 다른 타입의 셀을 섞어도 각 모델이 자기 셀을 알아서 dequeue 합니다. 셀/서플먼터리의 `register` 도 `apply`/`append` 시 자동 처리되어 별도 등록 코드가 필요 없습니다.
+The key idea is that **a model is a cell**. The associated type (`CellViewType`) of `CellViewConfigurableModel` decides which SwiftUI view it renders as, so even when you mix different cell types in one section, each model dequeues its own cell. Registration (`register`) of cells/supplementary views is also handled automatically on `apply`/`append`, so no manual registration code is needed.
 
 ---
 
-## 핵심 개념
+## Core concepts
 
-| 프로토콜 | 역할 |
+| Protocol | Role |
 |---|---|
-| `SectionContext` | 하나의 섹션 = `id` + `items`(셀 모델) + `reusableItems`(헤더/푸터 모델) + `layout`(레이아웃) |
-| `CellViewConfigurableModel` | 셀 데이터 모델. 연관타입 `CellViewType` 으로 매핑될 SwiftUI 셀을 지정. **`ObservableObject` 채택 불필요** (관찰이 필요할 때만 직접 채택) |
-| `CellView` | 셀로 그려질 SwiftUI `View`. `init(model:indexPath:)` 요구 |
-| `ReusableViewConfigurableModel` / `ReusableView` | 헤더·푸터(서플먼터리) 모델/뷰. `static var elementKind` 로 헤더/푸터 구분 |
-| `SectionLayout` | 섹션의 레이아웃. `GridSectionLayout`, `ListSectionLayout` 제공 |
+| `SectionContext` | One section = `id` + `items` (cell models) + `reusableItems` (header/footer models) + `layout` |
+| `CellViewConfigurableModel` | Cell data model. Specifies the mapped SwiftUI cell via `CellViewType`. **No `ObservableObject` required** (adopt it only when you need observation) |
+| `CellView` | A SwiftUI `View` rendered as a cell. Requires `init(model:indexPath:)` |
+| `ReusableViewConfigurableModel` / `ReusableView` | Header/footer (supplementary) model/view. `static var elementKind` distinguishes header vs footer |
+| `SectionLayout` | A section's layout. `GridSectionLayout`, `ListSectionLayout` provided |
 
-> 아래 모든 예시는 함께 제공되는 데모 앱에서 **빌드·동작이 검증된 코드**입니다.
+> All examples below are **code verified to build & run** in the bundled demo app.
 
 ---
 
-## SwiftUI 에서 사용
+## Using in SwiftUI
 
-선언형 `DynamicCollectionView` 에 `[any SectionContext]` 배열을 넘기는 방식입니다.
+Pass a `[any SectionContext]` array to the declarative `DynamicCollectionView`.
 
-### 셀 정의 (모델 + 뷰)
+### Defining a cell (model + view)
 
-`CellViewConfigurableModel`(데이터)과 `CellView`(SwiftUI 뷰)를 1:1 로 정의합니다. **`ObservableObject` 가 필요 없으므로** 단순 모델은 평범한 `final class` 로 둡니다.
+Define `CellViewConfigurableModel` (data) and `CellView` (SwiftUI view) 1:1. **Since `ObservableObject` is not required**, simple models can be plain `final class`es.
 
 ```swift
 import SwiftUI
 import DynamicCollectionView
 
-// 데이터 모델 — 관찰이 필요 없으면 그냥 final class
+// Data model — just a final class when you don't need observation
 final class ColorItem: CellViewConfigurableModel {
-    typealias CellViewType = ColorCell      // 이 모델이 그려질 셀
+    typealias CellViewType = ColorCell      // the cell this model renders as
 
-    let id: String                          // DiffableDataSource 식별자
+    let id: String                          // DiffableDataSource identifier
     let title: String
     let color: Color
 
@@ -200,7 +202,7 @@ final class ColorItem: CellViewConfigurableModel {
     }
 }
 
-// 1:1 매칭되는 SwiftUI 셀
+// The matching SwiftUI cell (1:1)
 struct ColorCell: CellView {
     private let model: ColorItem
 
@@ -216,9 +218,9 @@ struct ColorCell: CellView {
 }
 ```
 
-### 섹션 정의 & 화면 표시
+### Defining a section & displaying it
 
-`SectionContext` 로 섹션을 정의하고, `DynamicCollectionView` 에 섹션 배열을 넘기면 끝입니다. 섹션은 **값 타입(struct)** 으로 두는 것을 권장합니다(복사 후 수정이 안전).
+Define a section via `SectionContext` and pass the section array to `DynamicCollectionView`. Sections are best kept as **value types (struct)** (copy-then-mutate is safe).
 
 ```swift
 struct ColorSection: SectionContext {
@@ -231,7 +233,7 @@ struct ColorSection: SectionContext {
         self.items = items
     }
 
-    // 전체 너비 64pt 행 그리드
+    // full-width 64pt row grid
     var layout: some SectionLayout {
         GridSectionLayout(body: { _, _ in
             HGroupLayout(width: .fractionalWidth(1.0), height: .absolute(64)) {
@@ -256,18 +258,18 @@ struct ContentView: View {
 }
 ```
 
-`init` 은 **값**과 **바인딩** 두 가지를 제공합니다. `@State` 등을 `$` 로 넘기고 싶을 때 바인딩 init 을 쓰며, 동작은 값 기반과 동일합니다(매 업데이트마다 현재 값을 읽어 적용).
+There are two `init`s: **value** and **binding**. Use the binding init when you want to pass `@State` (etc.) with `$`; behavior is identical to the value init (it reads the current value on every update).
 
 ```swift
 @State private var sections: [any SectionContext] = ...
 
-DynamicCollectionView(sections)    // 값
-DynamicCollectionView($sections)   // 바인딩
+DynamicCollectionView(sections)    // value
+DynamicCollectionView($sections)   // binding
 ```
 
-### Grid 레이아웃
+### Grid layout
 
-`HGroupLayout` 안에 너비 1/N 짜리 `GridItemLayout` 을 N 개 두면 N 열 그리드가 됩니다.
+Putting N `GridItemLayout`s of width 1/N inside an `HGroupLayout` yields an N-column grid.
 
 ```swift
 var layout: some SectionLayout {
@@ -281,18 +283,18 @@ var layout: some SectionLayout {
 }
 ```
 
-### 중첩 그룹 (그룹 안의 그룹)
+### Nested groups (group within a group)
 
-`GroupLayout` 은 `ItemLayout` 을 채택하므로, 그룹의 subitem 으로 **또 다른 그룹**을 넣어 복잡한 CompositionalLayout 을 표현할 수 있습니다. 아래는 **가로 그룹 = [큰 아이템 1개(2/3)] + [세로 그룹(1/3): 작은 아이템 2개]** 형태의 매거진 레이아웃입니다.
+Since `GroupLayout` conforms to `ItemLayout`, you can place **another group** as a subitem to express complex CompositionalLayouts. Below is a magazine layout of the form **horizontal group = [one large item (2/3)] + [vertical group (1/3): two small items]**.
 
 ```swift
 var layout: some SectionLayout {
     GridSectionLayout(body: { _, _ in
-        // 가로 그룹: 왼쪽 큰 아이템 + 오른쪽 세로 그룹
+        // horizontal group: large item on the left + vertical group on the right
         HGroupLayout(width: .fractionalWidth(1.0), height: .absolute(200)) {
             GridItemLayout(width: .fractionalWidth(2.0 / 3.0), height: .fractionalHeight(1.0))
 
-            // 그룹 안의 그룹: 작은 아이템 2개를 세로로 스택
+            // group within a group: two small items stacked vertically
             VGroupLayout(width: .fractionalWidth(1.0 / 3.0), height: .fractionalHeight(1.0)) {
                 GridItemLayout(width: .fractionalWidth(1.0), height: .fractionalHeight(0.5))
                 GridItemLayout(width: .fractionalWidth(1.0), height: .fractionalHeight(0.5))
@@ -303,21 +305,21 @@ var layout: some SectionLayout {
 }
 ```
 
-이 그룹(아이템 3개)이 데이터 길이만큼 세로로 반복됩니다. 결과는 다음과 같습니다(큰 아이템 1 + 작은 아이템 2가 한 줄):
+This group (3 items) repeats vertically for the length of the data. The result looks like this (one large + two small items per row):
 
 ```
 ┌─────────────────┬───────┐
-│                 │  작은  │
-│     큰 아이템     ├───────┤
-│                 │  작은  │
+│                 │ small │
+│   large item    ├───────┤
+│                 │ small │
 └─────────────────┴───────┘
 ```
 
-> `HGroupLayout` / `VGroupLayout` 을 임의 깊이로 중첩할 수 있습니다. `WaterFallGroupLayout` 을 제외한 그룹은 모두 `ItemLayout` 이므로 어디든 subitem 으로 넣을 수 있습니다.
+> You can nest `HGroupLayout` / `VGroupLayout` to any depth. Every group except `WaterFallGroupLayout` is an `ItemLayout`, so it can be placed as a subitem anywhere.
 
-### List 레이아웃
+### List layout
 
-`ListSectionLayout` 은 `UICollectionLayoutListConfiguration` 기반으로 셀프사이징 행을 그립니다.
+`ListSectionLayout` draws self-sizing rows based on `UICollectionLayoutListConfiguration`.
 
 ```swift
 var layout: some SectionLayout {
@@ -325,9 +327,9 @@ var layout: some SectionLayout {
 }
 ```
 
-### WaterFall 레이아웃
+### WaterFall layout
 
-`WaterFallGroupLayout` 으로 Pinterest 식 가변 높이 레이아웃을 구성합니다. 각 아이템의 높이를 `itemHeightContext` 로 알려줍니다.
+Build a Pinterest-style variable-height layout with `WaterFallGroupLayout`. Provide each item's height via `itemHeightContext`.
 
 ```swift
 struct WaterfallSection: SectionContext {
@@ -359,9 +361,9 @@ struct WaterfallSection: SectionContext {
 }
 ```
 
-### Carousel (가로 페이징)
+### Carousel (horizontal paging)
 
-`GridSectionLayout.orthogonalScrollingBehavior(_:)` 로 가로 스크롤 캐러셀을 만듭니다. 그룹 너비를 1.0 미만으로 두면 옆 카드가 살짝 보입니다.
+Use `GridSectionLayout.orthogonalScrollingBehavior(_:)` for a horizontally scrolling carousel. A group width under 1.0 lets neighboring cards peek in.
 
 ```swift
 var layout: some SectionLayout {
@@ -377,10 +379,10 @@ var layout: some SectionLayout {
 
 ### Header / Footer
 
-서플먼터리 뷰도 셀과 동일한 패턴입니다. `ReusableViewConfigurableModel` + `ReusableView` 를 정의하고, `static var elementKind` 로 헤더/푸터를 구분합니다.
+Supplementary views follow the same pattern as cells. Define `ReusableViewConfigurableModel` + `ReusableView`, and distinguish header/footer via `static var elementKind`.
 
 ```swift
-// 헤더 모델 + 뷰
+// header model + view
 final class SectionHeaderModel: ReusableViewConfigurableModel {
     typealias ReusableViewType = SectionHeaderView
     let id: String
@@ -389,7 +391,7 @@ final class SectionHeaderModel: ReusableViewConfigurableModel {
 }
 
 struct SectionHeaderView: ReusableView {
-    static var elementKind: ReusableViewElementKind { .header }   // .footer 도 가능
+    static var elementKind: ReusableViewElementKind { .header }   // .footer also possible
     private let model: SectionHeaderModel
     init(model: SectionHeaderModel, indexPath: IndexPath) { self.model = model }
     var body: some View {
@@ -400,7 +402,7 @@ struct SectionHeaderView: ReusableView {
     }
 }
 
-// 섹션에서 reusableItems + 레이아웃의 header/footer 클로저로 연결
+// In the section, wire reusableItems + the layout's header/footer closures
 struct HeaderSection: SectionContext {
     let id: String
     var items: [any CellViewConfigurableModel]
@@ -427,42 +429,42 @@ struct HeaderSection: SectionContext {
 }
 ```
 
-### 다중 섹션
+### Multiple sections
 
-`DynamicCollectionView` 에 서로 다른 레이아웃의 섹션을 섞어 넘기면, 섹션마다 자기 레이아웃으로 그려집니다.
+Pass sections with different layouts to `DynamicCollectionView`, and each section renders with its own layout.
 
 ```swift
 let sections: [any SectionContext] = [
-    CarouselSection(id: "banner",  items: banners),     // 가로 캐러셀
-    GridSection(id: "grid",        items: products),    // 3열 그리드
-    ListSection(id: "list",        items: rows)         // 리스트
+    CarouselSection(id: "banner",  items: banners),     // horizontal carousel
+    GridSection(id: "grid",        items: products),    // 3-column grid
+    ListSection(id: "list",        items: rows)         // list
 ]
 
 DynamicCollectionView(sections)
 ```
 
-### 이벤트 핸들러
+### Event handlers
 
-체이닝 모디파이어로 선택·표시 이벤트를 받습니다. 핸들러는 매 업데이트마다 갱신되어 **항상 최신 상태**로 호출됩니다.
+Receive selection / display events via chaining modifiers. Handlers are refreshed on every update, so they are always called with **the latest state**.
 
 ```swift
 DynamicCollectionView(sections)
     .didSelectItem { item, indexPath in
         guard let item = item as? ColorItem else { return }
-        print("선택: \(item.title) @ \(indexPath)")
+        print("selected: \(item.title) @ \(indexPath)")
     }
     .willDisplayItem { item, indexPath in
-        // 셀이 화면에 나타나기 직전 (노출 로깅, 페이지네이션 등)
+        // just before a cell appears (impression logging, pagination, etc.)
     }
     .willDisplayReusableItem { item, indexPath in
-        // 헤더/푸터가 나타나기 직전
+        // just before a header/footer appears
     }
-    .keyboardDismissMode(.onDrag)   // 스크롤 시 키보드 내림
+    .keyboardDismissMode(.onDrag)   // dismiss the keyboard on scroll
 ```
 
-### 페이지네이션 (무한 스크롤)
+### Pagination (infinite scroll)
 
-`willDisplayItem` 에서 마지막 근처 아이템 표시를 감지해 다음 페이지를 로드합니다. 선언형이므로 **새 데이터를 합쳐 sections 를 다시 만들면** diff 가 추가분만 애니메이션합니다.
+Detect that a near-last item is about to be displayed in `willDisplayItem` and load the next page. Because it's declarative, **merging new data and rebuilding sections** makes the diff animate only the additions.
 
 ```swift
 struct FeedView: View {
@@ -475,7 +477,7 @@ struct FeedView: View {
     var body: some View {
         DynamicCollectionView(sections)
             .willDisplayItem { _, indexPath in
-                if indexPath.item >= items.count - 3 {   // 끝에서 3번째 도달
+                if indexPath.item >= items.count - 3 {   // reached 3rd-from-last
                     loadNextPage()
                 }
             }
@@ -483,19 +485,19 @@ struct FeedView: View {
     }
 
     private func loadNextPage() {
-        // 비동기 로드 후 메인에서 합치기
+        // load asynchronously, then merge on the main thread
         items.append(contentsOf: nextPageItems())
     }
 }
 ```
 
-### 데이터 갱신 (선언형)
+### Updating data (declarative)
 
-데이터 갱신은 별도 API 없이 **sections(또는 그 source 가 되는 state)를 바꾸기만** 하면 됩니다. `id` 기반 diff 로 추가/삭제/이동이 자동 애니메이션됩니다.
+Updating data needs no special API — **just change `sections` (or the state it derives from)**. The `id`-based diff animates insertions/deletions/moves automatically.
 
 ```swift
 struct EditableView: View {
-    // 진짜 상태는 items(셀 데이터). sections 는 거기서 파생한다.
+    // The real state is items (cell data); sections are derived from it.
     @State private var items: [ColorItem] = ColorItem.sample()
 
     private var sections: [any SectionContext] {
@@ -505,9 +507,9 @@ struct EditableView: View {
     var body: some View {
         VStack {
             HStack {
-                Button("추가")  { items.append(ColorItem.random()) }   // 삽입 애니메이션
-                Button("섞기")  { items.shuffle() }                   // 이동 애니메이션
-                Button("비우기") { items.removeAll() }                 // 삭제 애니메이션
+                Button("Add")     { items.append(ColorItem.random()) }   // insert animation
+                Button("Shuffle") { items.shuffle() }                    // move animation
+                Button("Clear")   { items.removeAll() }                  // delete animation
             }
             DynamicCollectionView(sections)
         }
@@ -517,17 +519,17 @@ struct EditableView: View {
 
 ---
 
-## UIKit 에서 사용
+## Using in UIKit
 
-SwiftUI 없이 엔진(`UIDynamicCollectionView`)을 ViewController 에서 직접 쓸 수 있습니다. 이때는 SwiftUI 측 프로토콜 대신 **`UICell` / `UICellConfigurableModel` / `UISection`** 을 구현합니다. 레이아웃은 `UISection.sectionLayout(...)` 에서 `NSCollectionLayoutSection` 을 직접 반환합니다.
+You can use the engine (`UIDynamicCollectionView`) directly in a view controller, without SwiftUI. In that case implement **`UICell` / `UICellConfigurableModel` / `UISection`** instead of the SwiftUI protocols. The layout is returned directly as an `NSCollectionLayoutSection` from `UISection.sectionLayout(...)`.
 
-### 셀 / 모델 / 섹션 정의
+### Defining cell / model / section
 
 ```swift
 import UIKit
 import DynamicCollectionView
 
-// 1) 셀 — UICollectionViewCell + UICell
+// 1) Cell — UICollectionViewCell + UICell
 final class ColorCell: UICollectionViewCell, UICell {
     private let label = UILabel()
 
@@ -552,7 +554,7 @@ final class ColorCell: UICollectionViewCell, UICell {
     }
 }
 
-// 2) 셀 모델 — UICellConfigurableModel (CellType 으로 위 셀과 매핑)
+// 2) Cell model — UICellConfigurableModel (mapped to the cell above via CellType)
 final class ColorModel: UICellConfigurableModel {
     typealias CellType = ColorCell
 
@@ -567,7 +569,7 @@ final class ColorModel: UICellConfigurableModel {
     }
 }
 
-// 3) 섹션 — UISection (레이아웃은 NSCollectionLayoutSection 직접 반환)
+// 3) Section — UISection (returns an NSCollectionLayoutSection directly)
 final class ColorSection: UISection {
     let id: String
     var items: [any UICellConfigurableModel]
@@ -595,7 +597,7 @@ final class ColorSection: UISection {
 }
 ```
 
-### UIDynamicCollectionView 사용
+### Using UIDynamicCollectionView
 
 ```swift
 final class FeedViewController: UIViewController {
@@ -619,44 +621,44 @@ final class FeedViewController: UIViewController {
 }
 ```
 
-> 셀 컴포넌트의 `register` 는 `apply`/`append` 시 내부에서 자동 처리되므로 별도 등록 코드가 필요 없습니다.
+> Registration of cell components is handled automatically on `apply`/`append`, so no manual registration code is needed.
 
-### 증분 갱신 API
+### Incremental update API
 
 ```swift
-// 전체 적용 (DiffableDataSource 스냅샷)
+// apply everything (DiffableDataSource snapshot)
 collectionView.apply(sections: sections, animated: true)
 
-// 섹션 / 아이템 증분 추가 (페이지네이션)
+// incremental append of sections / items (pagination)
 collectionView.append(sections: moreSections, animated: true)
 collectionView.append(items: moreItems, at: "main", animated: true)
 
-// 특정 섹션 reload
+// reload a specific section
 collectionView.reloadSection(["main"])
 ```
 
 ---
 
-## 레이아웃 DSL 레퍼런스
+## Layout DSL reference
 
-> 레이아웃 DSL 은 SwiftUI 측 `SectionContext.layout` 에서 사용합니다. (UIKit `UISection` 은 `NSCollectionLayoutSection` 을 직접 반환)
+> The layout DSL is used in the SwiftUI `SectionContext.layout`. (UIKit `UISection` returns an `NSCollectionLayoutSection` directly.)
 
-| 타입 | 종류 | 설명 |
+| Type | Kind | Description |
 |---|---|---|
-| `GridSectionLayout` | SectionLayout | 일반 그리드. `header` / `body` / `footer` 클로저, `interGroupSpacing`, `contentInsets`, `orthogonalScrollingBehavior`, `visibleItem` 지원 |
-| `ListSectionLayout` | SectionLayout | `UICollectionLayoutListConfiguration` 기반 리스트. `contentInset` 지원 |
-| `HGroupLayout` / `VGroupLayout` | GroupLayout | 가로 / 세로 그룹. `@ItemLayoutBuilder` 로 하위 아이템 구성 (그룹 중첩 가능) |
-| `WaterFallGroupLayout` | GroupLayout | Pinterest 식 가변 높이 (`NSCollectionLayoutGroup.custom`) |
-| `GridItemLayout` | ItemLayout | 단일 아이템 (width × height) |
-| `ReusableItemLayout` | ReusableLayout | 헤더/푸터 경계 아이템 (`kind` + height) |
+| `GridSectionLayout` | SectionLayout | General grid. Supports `header` / `body` / `footer` closures, `interGroupSpacing`, `contentInsets`, `orthogonalScrollingBehavior`, `visibleItem` |
+| `ListSectionLayout` | SectionLayout | List based on `UICollectionLayoutListConfiguration`. Supports `contentInset` |
+| `HGroupLayout` / `VGroupLayout` | GroupLayout | Horizontal / vertical group. Compose subitems via `@ItemLayoutBuilder` (groups can be nested) |
+| `WaterFallGroupLayout` | GroupLayout | Pinterest-style variable height (`NSCollectionLayoutGroup.custom`) |
+| `GridItemLayout` | ItemLayout | Single item (width × height) |
+| `ReusableItemLayout` | ReusableLayout | Header/footer boundary item (`kind` + height) |
 
 ### `LayoutSize`
 
 ```swift
-.fractionalWidth(0.5)    // 컨테이너 너비의 50%
-.fractionalHeight(1.0)   // 컨테이너 높이의 100%
-.estimated(120)          // 추정값 (콘텐츠에 따라 자동 조정)
-.absolute(64)            // 64pt 고정
+.fractionalWidth(0.5)    // 50% of the container width
+.fractionalHeight(1.0)   // 100% of the container height
+.estimated(120)          // estimated (auto-adjusts to content)
+.absolute(64)            // fixed 64pt
 ```
 
 ### `OrthogonalScrollingBehavior`
@@ -665,6 +667,6 @@ collectionView.reloadSection(["main"])
 
 ---
 
-## 라이선스
+## License
 
 [MIT](LICENSE)

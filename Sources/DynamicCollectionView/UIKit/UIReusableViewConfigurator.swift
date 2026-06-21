@@ -1,33 +1,34 @@
 import UIKit
 
-/// 추상화된 ``UIReusableViewConfigurableModel``을 ``UIDynamicCollectionView`` 내부에서 일시적으로 구체화하는 래퍼.
+/// A wrapper that temporarily concretizes an abstracted ``UIReusableViewConfigurableModel`` inside ``UIDynamicCollectionView``.
 ///
-/// `any UIReusableViewConfigurableModel`로부터 보충 뷰의 식별자, element kind,
-/// 구체 타입을 한 번에 끌어내어 보관한다. `Hashable`을 채택하여 디퍼블 데이터
-/// 소스에서 다루기 쉽게 만들며, 표준 라이브러리의 `Hashable` 프로토콜과
-/// `AnyHashable`의 관계와 유사한 역할을 한다.
+/// It extracts and stores the supplementary view's identifier, element kind, and
+/// concrete type all at once from an `any UIReusableViewConfigurableModel`. By
+/// conforming to `Hashable`, it becomes easy to handle in a diffable data source,
+/// playing a role similar to the relationship between the standard library's
+/// `Hashable` protocol and `AnyHashable`.
 ///
-/// - Important: 라이브러리 내부에서만 사용하는 `internal` 타입이다.
+/// - Important: This is an `internal` type used only within the library.
 final internal class UIReusableViewConfigurator: Hashable {
 
-    /// 원본 모델의 식별자.
+    /// The identifier of the original model.
     var id: String
 
-    /// 구체화의 대상이 된 원본 모델.
+    /// The original model that was concretized.
     let base: any UIReusableViewConfigurableModel
 
-    /// 매칭되는 보충 뷰의 재사용 식별자.
+    /// The reuse identifier of the matching supplementary view.
     let supplementaryViewIdentifier: String
 
-    /// 보충 뷰가 표현하는 element kind.
+    /// The element kind that the supplementary view represents.
     let elementKind: String
 
-    /// 매칭되는 보충 뷰의 구체 타입.
+    /// The concrete type of the matching supplementary view.
     let supplementaryViewType: UICollectionReusableView.Type
 
-    /// 구체 모델 타입으로부터 뷰 식별자/kind/타입과 식별자를 추출하여 래퍼를 만든다.
+    /// Creates the wrapper by extracting the view identifier/kind/type and the identifier from the concrete model type.
     ///
-    /// - Parameter base: 구체화할 ``UIReusableViewConfigurableModel`` 모델.
+    /// - Parameter base: The ``UIReusableViewConfigurableModel`` model to concretize.
     init<Item: UIReusableViewConfigurableModel>(_ base: Item) {
         self.base = base
         self.supplementaryViewIdentifier = Item.UIReusableViewType.selfIdentifier
@@ -36,12 +37,12 @@ final internal class UIReusableViewConfigurator: Hashable {
         self.id = base.id
     }
 
-    /// 두 래퍼가 같은 ``id``를 가지면 동일한 것으로 간주한다.
+    /// Two wrappers are considered equal if they have the same ``id``.
     static func == (lhs: UIReusableViewConfigurator, rhs: UIReusableViewConfigurator) -> Bool {
         lhs.id == rhs.id
     }
 
-    /// ``id``를 해셔에 결합한다.
+    /// Combines ``id`` into the hasher.
     func hash(into hasher: inout Hasher) {
         hasher.combine(self.id)
     }

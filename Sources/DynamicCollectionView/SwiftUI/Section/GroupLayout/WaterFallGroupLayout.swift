@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Pinterest 식 가변 높이(워터폴) 레이아웃을 구성하는 ``GroupLayout``.
+/// A ``GroupLayout`` that builds a Pinterest-style variable-height (waterfall) layout.
 ///
-/// 컬럼 수와 아이템 수, 그리고 각 아이템의 높이를 산출하는 컨텍스트 클로저를 받아
-/// 가장 짧은 컬럼에 다음 아이템을 채워 넣는 방식으로 프레임을 계산하고,
-/// `NSCollectionLayoutGroup.custom` 으로 변환한다. `interItemSpacing(_:)` 로 간격을 조정한다.
+/// It takes the number of columns, the number of items, and a context closure that computes each item's height,
+/// then calculates frames by placing each next item into the shortest column,
+/// and converts the result into an `NSCollectionLayoutGroup.custom`. Spacing is adjusted with `interItemSpacing(_:)`.
 ///
 /// ```swift
 /// let layout = WaterFallGroupLayout(
@@ -35,15 +35,15 @@ public class WaterFallGroupLayout: GroupLayout {
 
     private var contentInset: EdgeInsets
 
-    /// 컬럼/아이템 수와 높이 컨텍스트로 워터폴 그룹을 생성한다.
+    /// Creates a waterfall group from the column/item counts and a height context.
     ///
     /// - Parameters:
-    ///   - width: 그룹 너비 치수. 기본값은 컨테이너 전체 너비(`.fractionalWidth(1.0)`).
-    ///   - numberOfColumn: 컬럼(열) 수.
-    ///   - numberOfItems: 배치할 아이템 수.
-    ///   - environment: 컨테이너 크기를 얻기 위한 레이아웃 환경.
-    ///   - contentInset: 그룹 가장자리 여백. 기본값은 여백 없음.
-    ///   - itemHeightContext: 아이템 인덱스와 계산된 아이템 너비를 받아 높이를 반환하는 클로저.
+    ///   - width: The group's width dimension. Defaults to the full container width (`.fractionalWidth(1.0)`).
+    ///   - numberOfColumn: The number of columns.
+    ///   - numberOfItems: The number of items to lay out.
+    ///   - environment: The layout environment used to obtain the container size.
+    ///   - contentInset: The group's edge insets. Defaults to no insets.
+    ///   - itemHeightContext: A closure that takes the item index and the computed item width and returns the height.
     public init(
         width: LayoutSize = .fractionalWidth(1.0),
         numberOfColumn: Int,
@@ -61,12 +61,12 @@ public class WaterFallGroupLayout: GroupLayout {
         self.contentInset = contentInset
     }
 
-    /// 계산된 커스텀 아이템들로 `NSCollectionLayoutGroup` 을 빌드한다.
+    /// Builds an `NSCollectionLayoutGroup` from the computed custom items.
     ///
-    /// 그룹의 높이는 가장 높은 컬럼의 누적 높이로 결정된다.
+    /// The group's height is determined by the cumulative height of the tallest column.
     ///
-    /// - Returns: 빌드된 커스텀 `NSCollectionLayoutGroup`.
-    /// - Note: DSL 내부 빌드용 SPI 다. 프레임워크가 `NSCollectionLayout*` 로 변환할 때 호출하며 직접 호출하지 말 것.
+    /// - Returns: The built custom `NSCollectionLayoutGroup`.
+    /// - Note: This is an internal build SPI for the DSL. The framework calls it when converting to `NSCollectionLayout*`; do not call it directly.
     public final func _buildGroupLayout() -> NSCollectionLayoutGroup {
         let items = self._buildCustomItemLayout()
         return NSCollectionLayoutGroup.custom(
@@ -78,10 +78,10 @@ public class WaterFallGroupLayout: GroupLayout {
             }
     }
 
-    /// 아이템 간 간격을 설정하고 자신을 반환한다.
+    /// Sets the inter-item spacing and returns itself.
     ///
-    /// - Parameter spacing: 아이템 사이 간격(포인트).
-    /// - Returns: 간격이 적용된 자신(`Self`).
+    /// - Parameter spacing: The spacing between items, in points.
+    /// - Returns: Itself (`Self`) with the spacing applied.
     public func interItemSpacing(_ spacing: CGFloat) -> Self {
         self.interItemSpacing = spacing
         return self

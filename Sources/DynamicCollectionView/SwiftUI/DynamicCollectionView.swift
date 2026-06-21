@@ -1,17 +1,19 @@
 import SwiftUI
 
-/// `UICollectionView` 를 감싸는 선언형 SwiftUI 래퍼.
+/// A declarative SwiftUI wrapper around `UICollectionView`.
 ///
-/// 섹션 배열을 받아 컴포지셔널 레이아웃 기반의 컬렉션 뷰를 그립니다. 내부적으로
-/// `UICollectionViewDiffableDataSource` 를 사용하므로, 부모 뷰의 상태가 바뀌어
-/// 새 섹션 배열이 다시 전달되면 이전 스냅샷과의 차이를 계산해 항목의 추가/삭제/이동을
-/// 자동으로 애니메이션합니다.
+/// Takes an array of sections and renders a compositional-layout-based collection
+/// view. Internally it uses `UICollectionViewDiffableDataSource`, so when the parent
+/// view's state changes and a new array of sections is passed in, it computes the
+/// difference from the previous snapshot and automatically animates the insertion,
+/// deletion, and movement of items.
 ///
-/// 선택/표시 등의 이벤트는 ``didSelectItem(_:)``, ``willDisplayItem(_:)``,
-/// ``willDisplayReusableItem(_:)`` 같은 체이닝 모디파이어로 등록합니다. 이 핸들러들은
-/// 구조체 값으로 저장되었다가 ``updateUIView(_:context:)`` 에서 매 업데이트마다
-/// `context.coordinator` 에 다시 주입되므로, 상태가 바뀌어도 항상 최신 클로저가
-/// 호출됩니다.
+/// Events such as selection and display are registered with chaining modifiers like
+/// ``didSelectItem(_:)``, ``willDisplayItem(_:)``, and
+/// ``willDisplayReusableItem(_:)``. These handlers are stored as struct values and
+/// re-injected into `context.coordinator` on every update in
+/// ``updateUIView(_:context:)``, so the latest closure is always called even when the
+/// state changes.
 ///
 /// ```swift
 /// struct ContentView: View {
@@ -20,23 +22,23 @@ import SwiftUI
 ///     var body: some View {
 ///         DynamicCollectionView(sections)
 ///             .didSelectItem { item, indexPath in
-///                 print("선택됨: \(indexPath)")
+///                 print("Selected: \(indexPath)")
 ///             }
 ///             .willDisplayItem { item, indexPath in
-///                 // 페이지네이션 등
+///                 // Pagination, etc.
 ///             }
 ///             .keyboardDismissMode(.onDrag)
 ///     }
 /// }
 /// ```
 ///
-/// - Note: 섹션은 내부에서 ``SwiftUISection`` 으로 감싸진 뒤 `UIDynamicCollectionView.apply` 로 전달됩니다.
+/// - Note: Sections are wrapped in ``SwiftUISection`` internally before being passed to `UIDynamicCollectionView.apply`.
 public struct DynamicCollectionView: UIViewRepresentable {
 
-    /// `UIViewRepresentable` 가 생성/관리하는 UIKit 뷰 타입.
+    /// The UIKit view type that `UIViewRepresentable` creates and manages.
     public typealias UIViewType = UIDynamicCollectionView
 
-    /// 컬렉션 뷰의 델리게이트 이벤트를 중계하는 코디네이터 타입.
+    /// The coordinator type that relays the collection view's delegate events.
     public typealias Coordinator = Self.DynamicCollectionViewCoordinator
 
     private let sections: [any SectionContext]
@@ -51,24 +53,26 @@ public struct DynamicCollectionView: UIViewRepresentable {
 
     private var keyboardDismissModeValue: UIScrollView.KeyboardDismissMode?
 
-    /// 표시할 섹션 배열로 컬렉션 뷰를 생성합니다.
+    /// Creates a collection view from an array of sections to display.
     ///
-    /// 같은 컬렉션 뷰에 대해 부모 상태가 갱신되어 새 `sections` 가 전달되면, diffable
-    /// 데이터 소스가 이전 스냅샷과의 차이를 계산해 변경 사항을 반영합니다.
+    /// When the parent state updates and a new `sections` is passed to the same
+    /// collection view, the diffable data source computes the difference from the
+    /// previous snapshot and reflects the changes.
     ///
     /// - Parameters:
-    ///   - sections: 컬렉션 뷰에 표시할 섹션 목록.
-    ///   - animatingDifferences: 스냅샷 적용 시 변경 사항을 애니메이션할지 여부. 기본값은 `true`.
+    ///   - sections: The list of sections to display in the collection view.
+    ///   - animatingDifferences: Whether to animate changes when applying the snapshot. Defaults to `true`.
     public init(_ sections: [any SectionContext], animatingDifferences: Bool = true) {
         self.sections = sections
         self.animatingDifferences = animatingDifferences
     }
 
-    /// 섹션 배열에 대한 바인딩으로 컬렉션 뷰를 생성합니다.
+    /// Creates a collection view from a binding to an array of sections.
     ///
-    /// 값 기반 ``init(_:animatingDifferences:)`` 와 동일하게 동작하며, 호출부에서
-    /// `@State` 등을 `$` 로 전달하고 싶을 때 사용합니다. 매 업데이트마다 바인딩의
-    /// 현재 값을 읽어 적용하므로, 바인딩 대상 상태가 바뀌면 그대로 반영됩니다.
+    /// Behaves identically to the value-based ``init(_:animatingDifferences:)``, and is
+    /// used when the call site wants to pass `@State` or similar with `$`. It reads the
+    /// binding's current value and applies it on every update, so changes to the bound
+    /// state are reflected directly.
     ///
     /// ```swift
     /// @State private var sections: [any SectionContext] = ...
@@ -76,39 +80,39 @@ public struct DynamicCollectionView: UIViewRepresentable {
     /// ```
     ///
     /// - Parameters:
-    ///   - sections: 컬렉션 뷰에 표시할 섹션 목록에 대한 바인딩.
-    ///   - animatingDifferences: 스냅샷 적용 시 변경 사항을 애니메이션할지 여부. 기본값은 `true`.
+    ///   - sections: A binding to the list of sections to display in the collection view.
+    ///   - animatingDifferences: Whether to animate changes when applying the snapshot. Defaults to `true`.
     public init(_ sections: Binding<[any SectionContext]>, animatingDifferences: Bool = true) {
         self.sections = sections.wrappedValue
         self.animatingDifferences = animatingDifferences
     }
 
-    /// 델리게이트 이벤트를 처리할 ``DynamicCollectionViewCoordinator`` 를 생성합니다.
+    /// Creates the ``DynamicCollectionViewCoordinator`` that handles delegate events.
     ///
-    /// - Returns: 새로 생성된 코디네이터 인스턴스.
+    /// - Returns: A newly created coordinator instance.
     public func makeCoordinator() -> DynamicCollectionViewCoordinator {
         DynamicCollectionViewCoordinator()
     }
 
-    /// 기반이 되는 ``UIDynamicCollectionView`` 를 생성하고 코디네이터를 델리게이트로 연결합니다.
+    /// Creates the underlying ``UIDynamicCollectionView`` and connects the coordinator as its delegate.
     ///
-    /// - Parameter context: 코디네이터 등 SwiftUI 가 제공하는 표현 컨텍스트.
-    /// - Returns: 새로 생성된 UIKit 컬렉션 뷰.
+    /// - Parameter context: The representation context SwiftUI provides, including the coordinator.
+    /// - Returns: A newly created UIKit collection view.
     public func makeUIView(context: Context) -> UIDynamicCollectionView {
         let collectionView = UIDynamicCollectionView()
         collectionView.delegate = context.coordinator
         return collectionView
     }
 
-    /// 최신 핸들러와 설정을 코디네이터에 주입하고 현재 섹션 스냅샷을 적용합니다.
+    /// Injects the latest handlers and settings into the coordinator and applies the current section snapshot.
     ///
-    /// 모디파이어로 저장해 둔 클로저들을 매 업데이트마다 코디네이터에 다시 주입하여
-    /// stale 클로저 문제를 방지하고, 섹션을 ``SwiftUISection`` 으로 감싸 컬렉션 뷰에
-    /// 적용합니다.
+    /// Re-injects the closures stored by the modifiers into the coordinator on every
+    /// update to avoid the stale-closure problem, then wraps the sections in
+    /// ``SwiftUISection`` and applies them to the collection view.
     ///
     /// - Parameters:
-    ///   - uiView: 갱신할 UIKit 컬렉션 뷰.
-    ///   - context: 코디네이터를 포함한 표현 컨텍스트.
+    ///   - uiView: The UIKit collection view to update.
+    ///   - context: The representation context, including the coordinator.
     public func updateUIView(_ uiView: UIDynamicCollectionView, context: Context) {
         context.coordinator.itemDisplayHandler = self.itemDisplayHandler
         context.coordinator.reusableItemDisplayHandler = self.reusableItemDisplayHandler
@@ -120,42 +124,42 @@ public struct DynamicCollectionView: UIViewRepresentable {
         uiView.apply(sections: self.sections.map { SwiftUISection($0) }, animated: self.animatingDifferences)
     }
 
-    /// 셀이 화면에 표시되기 직전에 호출될 핸들러를 등록합니다.
+    /// Registers a handler to be called just before a cell appears on screen.
     ///
-    /// 무한 스크롤 페이지네이션이나 노출 로깅 등에 활용할 수 있습니다.
+    /// Useful for infinite-scroll pagination, impression logging, and similar tasks.
     ///
-    /// - Parameter itemDisplayHandler: 표시될 모델과 인덱스 경로를 받는 클로저.
-    /// - Returns: 핸들러가 적용된 새 ``DynamicCollectionView`` 값.
+    /// - Parameter itemDisplayHandler: A closure that receives the model to be displayed and its index path.
+    /// - Returns: A new ``DynamicCollectionView`` value with the handler applied.
     public func willDisplayItem(_ itemDisplayHandler: @escaping (_ item: any UICellConfigurableModel, _ indexPath: IndexPath) -> Void) -> Self {
         var copy = self
         copy.itemDisplayHandler = itemDisplayHandler
         return copy
     }
 
-    /// 서플먼터리 뷰(헤더/푸터)가 화면에 표시되기 직전에 호출될 핸들러를 등록합니다.
+    /// Registers a handler to be called just before a supplementary view (header/footer) appears on screen.
     ///
-    /// - Parameter reusableItemDisplayHandler: 표시될 서플먼터리 모델과 인덱스 경로를 받는 클로저.
-    /// - Returns: 핸들러가 적용된 새 ``DynamicCollectionView`` 값.
+    /// - Parameter reusableItemDisplayHandler: A closure that receives the supplementary model to be displayed and its index path.
+    /// - Returns: A new ``DynamicCollectionView`` value with the handler applied.
     public func willDisplayReusableItem(_ reusableItemDisplayHandler: @escaping (_ item: any UIReusableViewConfigurableModel, _ indexPath: IndexPath) -> Void) -> Self {
         var copy = self
         copy.reusableItemDisplayHandler = reusableItemDisplayHandler
         return copy
     }
 
-    /// 스크롤 중 키보드를 닫는 방식을 설정합니다.
+    /// Sets how the keyboard is dismissed while scrolling.
     ///
-    /// - Parameter mode: 적용할 `UIScrollView.KeyboardDismissMode`.
-    /// - Returns: 설정이 적용된 새 ``DynamicCollectionView`` 값.
+    /// - Parameter mode: The `UIScrollView.KeyboardDismissMode` to apply.
+    /// - Returns: A new ``DynamicCollectionView`` value with the setting applied.
     public func keyboardDismissMode(_ mode: UIScrollView.KeyboardDismissMode) -> Self {
         var copy = self
         copy.keyboardDismissModeValue = mode
         return copy
     }
 
-    /// 항목이 선택되었을 때 호출될 핸들러를 등록합니다.
+    /// Registers a handler to be called when an item is selected.
     ///
-    /// - Parameter didSelectItemHandler: 선택된 모델과 인덱스 경로를 받는 클로저.
-    /// - Returns: 핸들러가 적용된 새 ``DynamicCollectionView`` 값.
+    /// - Parameter didSelectItemHandler: A closure that receives the selected model and its index path.
+    /// - Returns: A new ``DynamicCollectionView`` value with the handler applied.
     public func didSelectItem(_ didSelectItemHandler: @escaping (_ item: any UICellConfigurableModel, _ indexPath: IndexPath) -> Void) -> Self {
         var copy = self
         copy.didSelectItemHandler = didSelectItemHandler
@@ -164,11 +168,11 @@ public struct DynamicCollectionView: UIViewRepresentable {
 }
 
 public extension DynamicCollectionView {
-    /// ``DynamicCollectionView`` 의 UIKit 델리게이트 이벤트를 SwiftUI 핸들러로 중계하는 코디네이터.
+    /// A coordinator that relays ``DynamicCollectionView``'s UIKit delegate events to SwiftUI handlers.
     ///
-    /// `UICollectionViewDelegate` 콜백을 받아, ``updateUIView(_:context:)`` 에서
-    /// 주입된 최신 핸들러 클로저로 전달합니다. 인덱스 경로로 모델을 안전하게 조회한 뒤
-    /// 해당 클로저가 있을 때만 호출합니다.
+    /// Receives `UICollectionViewDelegate` callbacks and forwards them to the latest
+    /// handler closures injected in ``updateUIView(_:context:)``. It safely looks up the
+    /// model by index path and invokes the corresponding closure only when one is present.
     class DynamicCollectionViewCoordinator: NSObject, UICollectionViewDelegate {
 
         var itemDisplayHandler: ((_ item: any UICellConfigurableModel, _ indexPath: IndexPath) -> Void)?
@@ -177,12 +181,12 @@ public extension DynamicCollectionView {
 
         var didSelectItemHandler: ((_ item: any UICellConfigurableModel, _ indexPath: IndexPath) -> Void)?
 
-        /// 셀이 표시되기 직전에 호출되어 등록된 표시 핸들러로 모델과 인덱스 경로를 전달합니다.
+        /// Called just before a cell is displayed, forwarding the model and index path to the registered display handler.
         ///
         /// - Parameters:
-        ///   - collectionView: 이벤트를 보낸 컬렉션 뷰.
-        ///   - cell: 표시될 셀.
-        ///   - indexPath: 표시될 셀의 인덱스 경로.
+        ///   - collectionView: The collection view that sent the event.
+        ///   - cell: The cell to be displayed.
+        ///   - indexPath: The index path of the cell to be displayed.
         public func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
             guard let collectionView = collectionView as? UIDynamicCollectionView,
                   let item = collectionView.currentSections[safe: indexPath.section]?.items[safe: indexPath.item]
@@ -191,13 +195,13 @@ public extension DynamicCollectionView {
             self.itemDisplayHandler?(item, indexPath)
         }
 
-        /// 서플먼터리 뷰가 표시되기 직전에 호출되어 등록된 핸들러로 모델과 인덱스 경로를 전달합니다.
+        /// Called just before a supplementary view is displayed, forwarding the model and index path to the registered handler.
         ///
         /// - Parameters:
-        ///   - collectionView: 이벤트를 보낸 컬렉션 뷰.
-        ///   - view: 표시될 서플먼터리 뷰.
-        ///   - elementKind: 서플먼터리 엘리먼트 종류(헤더/푸터).
-        ///   - indexPath: 표시될 뷰의 인덱스 경로.
+        ///   - collectionView: The collection view that sent the event.
+        ///   - view: The supplementary view to be displayed.
+        ///   - elementKind: The kind of supplementary element (header/footer).
+        ///   - indexPath: The index path of the view to be displayed.
         public func collectionView(_ collectionView: UICollectionView, willDisplaySupplementaryView view: UICollectionReusableView, forElementKind elementKind: String, at indexPath: IndexPath) {
             guard let collectionView = collectionView as? UIDynamicCollectionView,
                   let item = collectionView.currentSections[safe: indexPath.section]?.reusableItems[elementKind]?[safe: indexPath.item]
@@ -206,11 +210,11 @@ public extension DynamicCollectionView {
             self.reusableItemDisplayHandler?(item, indexPath)
         }
 
-        /// 항목이 선택되었을 때 호출되어 등록된 선택 핸들러로 모델과 인덱스 경로를 전달합니다.
+        /// Called when an item is selected, forwarding the model and index path to the registered selection handler.
         ///
         /// - Parameters:
-        ///   - collectionView: 이벤트를 보낸 컬렉션 뷰.
-        ///   - indexPath: 선택된 항목의 인덱스 경로.
+        ///   - collectionView: The collection view that sent the event.
+        ///   - indexPath: The index path of the selected item.
         public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
             guard let collectionView = collectionView as? UIDynamicCollectionView,
                   let item = collectionView.currentSections[safe: indexPath.section]?.items[safe: indexPath.item]

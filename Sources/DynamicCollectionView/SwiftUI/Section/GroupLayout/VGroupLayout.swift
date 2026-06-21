@@ -1,9 +1,9 @@
 import UIKit
 
-/// 하위 아이템들을 세로로 배치하는 ``GroupLayout``.
+/// A ``GroupLayout`` that arranges its subitems vertically.
 ///
-/// 너비/높이/간격과 함께 ``ItemLayoutBuilder`` 로 하위 ``ItemLayout`` 을 선언하면
-/// 세로 방향 `NSCollectionLayoutGroup` 으로 변환된다.
+/// When you declare subitem ``ItemLayout`` values with ``ItemLayoutBuilder`` along with the width/height/spacing,
+/// it is converted into a vertical `NSCollectionLayoutGroup`.
 public class VGroupLayout {
 
     private let width: LayoutSize
@@ -14,13 +14,13 @@ public class VGroupLayout {
 
     private let items: () -> [any ItemLayout]
 
-    /// 크기/간격과 하위 아이템 빌더로 세로 그룹을 생성한다.
+    /// Creates a vertical group from the size/spacing and a subitem builder.
     ///
     /// - Parameters:
-    ///   - width: 그룹 너비 치수.
-    ///   - height: 그룹 높이 치수.
-    ///   - spacing: 하위 아이템 사이 간격(포인트). 기본값은 `0`.
-    ///   - items: 하위 ``ItemLayout`` 들을 선언하는 빌더 클로저.
+    ///   - width: The group's width dimension.
+    ///   - height: The group's height dimension.
+    ///   - spacing: The spacing between subitems, in points. Defaults to `0`.
+    ///   - items: A builder closure that declares the subitem ``ItemLayout`` values.
     public init(width: LayoutSize, height: LayoutSize, spacing: CGFloat = 0, @ItemLayoutBuilder items: @escaping () -> [any ItemLayout]) {
         self.width = width
         self.height = height
@@ -31,10 +31,10 @@ public class VGroupLayout {
 
 extension VGroupLayout: GroupLayout {
 
-    /// 하위 아이템들을 세로로 배치한 `NSCollectionLayoutGroup` 을 빌드한다.
+    /// Builds an `NSCollectionLayoutGroup` that arranges its subitems vertically.
     ///
-    /// - Returns: 빌드된 세로 방향 `NSCollectionLayoutGroup`.
-    /// - Note: DSL 내부 빌드용 SPI 다. 프레임워크가 `NSCollectionLayout*` 로 변환할 때 호출하며 직접 호출하지 말 것.
+    /// - Returns: The built vertical `NSCollectionLayoutGroup`.
+    /// - Note: This is an internal build SPI for the DSL. The framework calls it when converting to `NSCollectionLayout*`; do not call it directly.
     public final func _buildGroupLayout() -> NSCollectionLayoutGroup {
         let group = NSCollectionLayoutGroup.vertical(
             layoutSize: .init(
