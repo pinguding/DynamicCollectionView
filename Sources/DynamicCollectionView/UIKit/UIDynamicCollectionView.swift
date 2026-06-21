@@ -272,6 +272,8 @@ extension UIDynamicCollectionView {
             snapshot.appendItems(configurator.base.items.map(\.id), toSection: configurator.id)
         }
 
+        self.currentSections.append(contentsOf: sections)
+
         diffableDataSource.apply(snapshot, animatingDifferences: animated, completion: completion)
     }
 

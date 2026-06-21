@@ -27,6 +27,14 @@ public enum ReusableViewElementKind: String {
 /// of a `UICollectionReusableView` through the ``SwiftUIReusableView`` bridge. The
 /// associated type ``Model`` and ``elementKind`` declare which data to display at which
 /// position (header/footer).
+///
+/// - Important: Like ``CellView``, a ``ReusableView`` is hosted inside a **reused**
+///   `UICollectionReusableView` whose host is recreated on every reuse. **Do not store mutable
+///   UI state in the view with `@State` or `@Binding`** — it is reset on reuse. Keep the
+///   supplementary view a stateless function of its ``Model``, and when state must persist make
+///   the model an `ObservableObject` (`@Published` properties) and observe it with
+///   `@ObservedObject`. The model is the single source of truth. See ``CellView`` for the full
+///   rationale and example.
 public protocol ReusableView: View {
 
     /// The type of the data model this supplementary view displays.
