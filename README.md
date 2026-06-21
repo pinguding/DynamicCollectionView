@@ -5,6 +5,7 @@
 데이터(Section / Cell / ReusableView 모델)에 따라 동적으로 구성되는 CompositionalLayout 기반 CollectionView 와, 이를 SwiftUI 에서 선언형으로 감싼 래퍼를 **3rd-party 의존성 없이** 제공합니다.
 
 - ✅ **UIKit `UIDynamicCollectionView`** + **SwiftUI `DynamicCollectionView`** 양쪽 지원
+- ✅ SwiftUI 진입점은 **값 / 바인딩(`$`) init 모두 제공**
 - ✅ **데이터 = 셀** — 모델 하나가 곧 셀 하나로 1:1 매핑
 - ✅ **레이아웃 DSL** — Grid / List / WaterFall 을 result builder 로 선언
 - ✅ `UICollectionViewDiffableDataSource` 기반 **자동 diff** (추가/삭제/이동 애니메이션)
@@ -251,6 +252,15 @@ struct ContentView: View {
         DynamicCollectionView(sections)
     }
 }
+```
+
+`init` 은 **값**과 **바인딩** 두 가지를 제공합니다. `@State` 등을 `$` 로 넘기고 싶을 때 바인딩 init 을 쓰며, 동작은 값 기반과 동일합니다(매 업데이트마다 현재 값을 읽어 적용).
+
+```swift
+@State private var sections: [any SectionContext] = ...
+
+DynamicCollectionView(sections)    // 값
+DynamicCollectionView($sections)   // 바인딩
 ```
 
 ### Grid 레이아웃

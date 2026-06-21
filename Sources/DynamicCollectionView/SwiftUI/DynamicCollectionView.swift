@@ -64,6 +64,25 @@ public struct DynamicCollectionView: UIViewRepresentable {
         self.animatingDifferences = animatingDifferences
     }
 
+    /// 섹션 배열에 대한 바인딩으로 컬렉션 뷰를 생성합니다.
+    ///
+    /// 값 기반 ``init(_:animatingDifferences:)`` 와 동일하게 동작하며, 호출부에서
+    /// `@State` 등을 `$` 로 전달하고 싶을 때 사용합니다. 매 업데이트마다 바인딩의
+    /// 현재 값을 읽어 적용하므로, 바인딩 대상 상태가 바뀌면 그대로 반영됩니다.
+    ///
+    /// ```swift
+    /// @State private var sections: [any SectionContext] = ...
+    /// DynamicCollectionView($sections)
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - sections: 컬렉션 뷰에 표시할 섹션 목록에 대한 바인딩.
+    ///   - animatingDifferences: 스냅샷 적용 시 변경 사항을 애니메이션할지 여부. 기본값은 `true`.
+    public init(_ sections: Binding<[any SectionContext]>, animatingDifferences: Bool = true) {
+        self.sections = sections.wrappedValue
+        self.animatingDifferences = animatingDifferences
+    }
+
     /// 델리게이트 이벤트를 처리할 ``DynamicCollectionViewCoordinator`` 를 생성합니다.
     ///
     /// - Returns: 새로 생성된 코디네이터 인스턴스.
