@@ -59,7 +59,7 @@ Add it to your `Package.swift` dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/pinguding/DynamicCollectionView.git", from: "1.1.1")
+    .package(url: "https://github.com/pinguding/DynamicCollectionView.git", from: "1.2.0")
 ]
 ```
 

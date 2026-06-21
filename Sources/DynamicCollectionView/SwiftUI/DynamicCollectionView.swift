@@ -192,7 +192,9 @@ public extension DynamicCollectionView {
                   let item = collectionView.currentSections[safe: indexPath.section]?.items[safe: indexPath.item]
             else { return }
 
-            self.itemDisplayHandler?(item, indexPath)
+            let handler = self.itemDisplayHandler
+
+            DispatchQueue.main.async { handler?(item, indexPath) }
         }
 
         /// Called just before a supplementary view is displayed, forwarding the model and index path to the registered handler.
@@ -207,7 +209,9 @@ public extension DynamicCollectionView {
                   let item = collectionView.currentSections[safe: indexPath.section]?.reusableItems[elementKind]?[safe: indexPath.item]
             else { return }
 
-            self.reusableItemDisplayHandler?(item, indexPath)
+            let handler = self.reusableItemDisplayHandler
+
+            DispatchQueue.main.async { handler?(item, indexPath) }
         }
 
         /// Called when an item is selected, forwarding the model and index path to the registered selection handler.
