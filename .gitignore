@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Swift Package Manager
+/.build
+.build/
+/Packages
+Package.resolved
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+.swiftpm/
+
+# 로컬 테스트용 샘플 앱 (배포 대상 아님)
+ExampleDynamicCollectionViewApp/
