@@ -6,9 +6,14 @@ import Foundation
 /// which SwiftUI cell view the model maps to and which `UICollectionViewCell` type
 /// hosts that cell.
 ///
-/// - Note: This protocol does not require conformance to `ObservableObject`. Only when
-///   you need to observe value changes inside the cell should the model type adopt
-///   `ObservableObject` directly.
+/// - Note: This protocol does not require conformance to `ObservableObject`. A model that only
+///   feeds immutable data into its cell can stay a plain `final class`.
+///
+/// - Important: The model is the **single source of truth** for its cell. A ``CellView`` is
+///   hosted in a reused cell and must not keep mutable state in `@State`/`@Binding` (see
+///   ``CellView`` for why). When a cell needs state that mutates and must persist across reuse,
+///   define that state here on the model: adopt `ObservableObject`, mark the properties
+///   `@Published`, and observe the model from the cell with `@ObservedObject`.
 public protocol CellViewConfigurableModel: UICellConfigurableModel {
 
     /// The type of the SwiftUI cell view configured by this model.

@@ -28,6 +28,7 @@
 - [핵심 개념](#핵심-개념)
 - [SwiftUI 에서 사용](#swiftui-에서-사용)
   - [셀 정의 (모델 + 뷰)](#셀-정의-모델--뷰)
+  - [셀 상태: 모델을 단일 진실 공급원(SOT)으로](#셀-상태-모델을-단일-진실-공급원sot으로)
   - [섹션 정의 & 화면 표시](#섹션-정의--화면-표시)
   - [Grid 레이아웃](#grid-레이아웃)
   - [중첩 그룹 (그룹 안의 그룹)](#중첩-그룹-그룹-안의-그룹)
@@ -59,7 +60,7 @@
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/pinguding/DynamicCollectionView.git", from: "1.2.0")
+    .package(url: "https://github.com/pinguding/DynamicCollectionView.git", from: "1.3.0")
 ]
 ```
 
@@ -217,6 +218,66 @@ struct ColorCell: CellView {
     }
 }
 ```
+
+### 셀 상태: 모델을 단일 진실 공급원(SOT)으로
+
+`CellView` 는 **재사용되는** `UICollectionViewCell` 위에 얹히고, 그 SwiftUI 호스트는 셀이 재사용될 때마다 새로 만들어집니다. 여기서 한 가지 확고한 규칙이 따라옵니다:
+
+> **셀 내부에 `@State` 나 `@Binding` 으로 가변 UI 상태를 두지 마세요.**
+
+이런 상태는 셀 재사용 상황에서 기대대로 동작하지 않습니다:
+
+- 셀이 재사용될 때마다 **초기화**됩니다(셀을 화면 밖으로 스크롤했다가 돌아오면 토글이 사라짐).
+- 반대로 초기화를 피하려고 호스트를 살려두면, 상태가 엉뚱한 아이템으로 **번집니다**(아이템 A의 "좋아요" 가, 같은 셀을 재사용한 아이템 B에 나타남).
+
+둘 다 데이터 아이템에 묶여 있지 않기 때문입니다. `@State` 의 수명은 *모델* 이 아니라 *셀* 을 따라가니까요. 순수 `@State` 만으로 재사용 너머까지 아이템별 상태를 보존할 방법은 없습니다 — 상태는 아이템과 같은 수명을 가진 곳, 즉 **모델** 에 있어야 합니다.
+
+따라서 셀이 가변·보존이 필요한 상태(선택, 좋아요, 펼침/접힘 등)를 가질 때는 모델을 진실 공급원으로 삼으세요: `ObservableObject` 를 채택하고, 상태를 `@Published` 로 선언한 뒤, 셀에서 `@ObservedObject` 로 관찰합니다.
+
+```swift
+import SwiftUI
+import Combine
+import DynamicCollectionView
+
+// ✅ 상태가 모델에 있으므로 재사용을 견디고, 올바른 아이템에 묶여 있습니다.
+final class ProductItem: CellViewConfigurableModel, ObservableObject {
+    typealias CellViewType = ProductCell
+
+    let id: String
+    let title: String
+    @Published var isLiked = false          // 가변·보존 상태
+
+    init(id: String, title: String) {
+        self.id = id
+        self.title = title
+    }
+}
+
+struct ProductCell: CellView {
+    @ObservedObject private var model: ProductItem   // @State 가 아니라 모델을 관찰
+
+    init(model: ProductItem, indexPath: IndexPath) {
+        self.model = model
+    }
+
+    var body: some View {
+        HStack {
+            Text(model.title)
+            Spacer()
+            Button {
+                model.isLiked.toggle()       // SOT 에 다시 씀
+            } label: {
+                Image(systemName: model.isLiked ? "heart.fill" : "heart")
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+```
+
+셀에 **불변** 데이터만 넘기는 모델이라면 이런 처리가 전혀 필요 없습니다 — 평범한 `final class` 로 두세요. 셀이 실제로 상태를 바꾸고 기억해야 할 때만 `ObservableObject` 를 채택하면 됩니다.
+
+> 같은 규칙이 `ReusableView`(헤더/푸터)에도 적용됩니다. 얘들도 재사용되므로 상태는 `ReusableViewConfigurableModel` 에 두세요.
 
 ### 섹션 정의 & 화면 표시
 

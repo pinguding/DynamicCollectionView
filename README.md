@@ -28,6 +28,7 @@ Brings `UICollectionView`'s `UICollectionViewCompositionalLayout` and `UICollect
 - [Core concepts](#core-concepts)
 - [Using in SwiftUI](#using-in-swiftui)
   - [Defining a cell (model + view)](#defining-a-cell-model--view)
+  - [Cell state: keep the model as the single source of truth](#cell-state-keep-the-model-as-the-single-source-of-truth)
   - [Defining a section & displaying it](#defining-a-section--displaying-it)
   - [Grid layout](#grid-layout)
   - [Nested groups (group within a group)](#nested-groups-group-within-a-group)
@@ -59,7 +60,7 @@ Add it to your `Package.swift` dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/pinguding/DynamicCollectionView.git", from: "1.2.0")
+    .package(url: "https://github.com/pinguding/DynamicCollectionView.git", from: "1.3.0")
 ]
 ```
 
@@ -217,6 +218,66 @@ struct ColorCell: CellView {
     }
 }
 ```
+
+### Cell state: keep the model as the single source of truth
+
+A `CellView` is hosted inside a **reused** `UICollectionViewCell`, and its SwiftUI host is recreated every time the cell is reused. This has one firm consequence:
+
+> **Do not store mutable UI state inside a cell with `@State` or `@Binding`.**
+
+Such state does not behave the way you expect under cell reuse:
+
+- It is **reset** whenever the cell is reused (scroll a cell off-screen and back → your toggle is gone).
+- If the host were instead kept alive to avoid that reset, the state would **bleed** into unrelated items (item A's "liked" flag shows up on item B that happens to reuse the same cell).
+
+Neither is tied to the data item, because `@State`'s lifetime follows the *cell*, not the *model*. There is no pure-`@State` way to persist per-item state across reuse — the state must live somewhere whose lifetime matches the item. That place is the **model**.
+
+So when a cell needs mutable, persistent state (selection, like, expand/collapse, …), make the model the source of truth: adopt `ObservableObject`, mark the state `@Published`, and observe it from the cell with `@ObservedObject`.
+
+```swift
+import SwiftUI
+import Combine
+import DynamicCollectionView
+
+// ✅ State lives on the model — survives reuse, stays bound to the right item.
+final class ProductItem: CellViewConfigurableModel, ObservableObject {
+    typealias CellViewType = ProductCell
+
+    let id: String
+    let title: String
+    @Published var isLiked = false          // mutable, persistent state
+
+    init(id: String, title: String) {
+        self.id = id
+        self.title = title
+    }
+}
+
+struct ProductCell: CellView {
+    @ObservedObject private var model: ProductItem   // observe the model, not @State
+
+    init(model: ProductItem, indexPath: IndexPath) {
+        self.model = model
+    }
+
+    var body: some View {
+        HStack {
+            Text(model.title)
+            Spacer()
+            Button {
+                model.isLiked.toggle()       // write back to the SOT
+            } label: {
+                Image(systemName: model.isLiked ? "heart.fill" : "heart")
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+```
+
+A model that only feeds **immutable** data into its cell does not need any of this — keep it a plain `final class`. Adopt `ObservableObject` only when the cell actually mutates and must remember state.
+
+> The same rule applies to `ReusableView` (headers/footers): they are reused too, so keep their state on the `ReusableViewConfigurableModel`.
 
 ### Defining a section & displaying it
 

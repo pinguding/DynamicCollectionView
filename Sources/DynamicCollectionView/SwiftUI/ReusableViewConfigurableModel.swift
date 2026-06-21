@@ -6,8 +6,14 @@ import Foundation
 /// types which SwiftUI supplementary view the model maps to and which
 /// `UICollectionReusableView` type hosts that view.
 ///
-/// - Note: This protocol does not require conformance to `ObservableObject`. Only when
-///   you need to observe value changes should the model type adopt `ObservableObject` directly.
+/// - Note: This protocol does not require conformance to `ObservableObject`. A model that only
+///   feeds immutable data into its view can stay a plain `final class`.
+///
+/// - Important: The model is the **single source of truth** for its supplementary view. A
+///   ``ReusableView`` is hosted in a reused view and must not keep mutable state in
+///   `@State`/`@Binding`. When state must mutate and persist across reuse, define it here:
+///   adopt `ObservableObject`, mark properties `@Published`, and observe the model from the view
+///   with `@ObservedObject`. See ``CellViewConfigurableModel`` and ``CellView`` for details.
 public protocol ReusableViewConfigurableModel: UIReusableViewConfigurableModel {
 
     /// The type of the SwiftUI supplementary view configured by this model.
